@@ -1,0 +1,17 @@
+{
+  "images" : [
+    {
+      "filename" : "1665_Girl_with_a_Pearl_Earring.jpg",
+      "idiom" : "tv",
+      "scale" : "1x"
+    },
+    {
+      "idiom" : "tv",
+      "scale" : "2x"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

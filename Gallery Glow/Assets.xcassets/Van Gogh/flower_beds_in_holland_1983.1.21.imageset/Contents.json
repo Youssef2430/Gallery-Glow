@@ -1,0 +1,17 @@
+{
+  "images" : [
+    {
+      "filename" : "flower_beds_in_holland_1983.1.21.jpg",
+      "idiom" : "tv",
+      "scale" : "1x"
+    },
+    {
+      "idiom" : "tv",
+      "scale" : "2x"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

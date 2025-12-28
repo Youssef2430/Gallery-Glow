@@ -1,0 +1,17 @@
+{
+  "images" : [
+    {
+      "filename" : "seascape_at_port-en-bessin_normandy_1972.9.21.jpg",
+      "idiom" : "tv",
+      "scale" : "1x"
+    },
+    {
+      "idiom" : "tv",
+      "scale" : "2x"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

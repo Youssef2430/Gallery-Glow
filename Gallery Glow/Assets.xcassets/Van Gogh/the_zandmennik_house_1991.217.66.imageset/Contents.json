@@ -1,0 +1,17 @@
+{
+  "images" : [
+    {
+      "filename" : "the_zandmennik_house_1991.217.66.jpg",
+      "idiom" : "tv",
+      "scale" : "1x"
+    },
+    {
+      "idiom" : "tv",
+      "scale" : "2x"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

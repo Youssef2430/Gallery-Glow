@@ -1,0 +1,17 @@
+{
+  "images" : [
+    {
+      "filename" : "After-restoration-The-Virgin-Child-Jesus-and-Saint-Anne-Leonardo-da-Vinci-Louvre-Paris.jpg",
+      "idiom" : "tv",
+      "scale" : "1x"
+    },
+    {
+      "idiom" : "tv",
+      "scale" : "2x"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

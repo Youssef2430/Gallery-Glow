@@ -1,0 +1,17 @@
+{
+  "images" : [
+    {
+      "filename" : "roses_1991.67.1.jpg",
+      "idiom" : "tv",
+      "scale" : "1x"
+    },
+    {
+      "idiom" : "tv",
+      "scale" : "2x"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
