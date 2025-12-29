@@ -19,16 +19,6 @@ A tvOS art gallery + “screensaver” experience that highlights classic painti
   - Shows “Painting of the Day” + a “Gallery” section on the Apple TV Home screen
   - Selecting a Top Shelf item deep-links into the app
 
-## Getting started
-### Requirements
-- Xcode with the **tvOS 26.2 SDK** (project deployment target is `tvOS 26.2`)
-
-### Run
-1. Open `Gallery Glow.xcodeproj` in Xcode.
-2. Select the **Gallery Glow** scheme.
-3. Choose an Apple TV device or tvOS Simulator.
-4. Build & Run.
-
 ### Top Shelf
 To see Top Shelf content on Apple TV:
 1. Move **Gallery Glow** into the **top row** of apps on the Home screen.
@@ -44,18 +34,6 @@ Where `<imageName>` matches the painting’s `imageName` value (and may be perce
 - `galleryglow://painting/Van%20Gogh%2Fself-portrait_1998.74.5`
 
 Deep link handling lives in `Gallery Glow/Gallery_GlowApp.swift`.
-
-## Project structure
-- `Gallery Glow/` — main tvOS app (SwiftUI)
-  - `ContentView.swift` — home screen sections
-  - `ArtistView.swift` — artist detail grid
-  - `ScreensaverView.swift` — full-screen painting presentation
-  - `GradientScreensaverView.swift` — animated gradient mode
-  - `PaintingData.swift` — curated painting + artist data
-  - `Assets.xcassets/` — painting images grouped by artist
-- `Gallery Shelf/` — Top Shelf extension (TVServices)
-  - `ContentProvider.swift` — Top Shelf sections + actions
-  - `TopShelfImages/` — pre-sized image files used by the extension
 
 ## Adding or updating paintings
 1. Add the image to `Gallery Glow/Assets.xcassets`.
