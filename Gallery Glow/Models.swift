@@ -30,4 +30,14 @@ struct Painting: Identifiable, Hashable {
     let artistName: String
     let imageName: String
     let description: String
+    let forceFullScreen: Bool
+    
+    init(title: String, year: Int, artistName: String, imageName: String, description: String, forceFullScreen: Bool = false) {
+        self.title = title
+        self.year = year
+        self.artistName = artistName
+        self.imageName = imageName
+        self.description = description
+        self.forceFullScreen = forceFullScreen
+    }
 }

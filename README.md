@@ -43,7 +43,3 @@ Deep link handling lives in `Gallery Glow/Gallery_GlowApp.swift`.
    - Example: `Van Gogh/self-portrait_1998.74.5` → `Van Gogh_self-portrait_1998.74.5.jpg`
 
 Note: Top Shelf extensions have tight memory budgets, so the extension uses **pre-sized** images (bundle file URLs) rather than decoding large asset-catalog images at runtime.
-
-## Troubleshooting
-### “Killed by the operating system because it is using too much memory” (Top Shelf)
-If the Top Shelf extension gets jetsam-killed, ensure images used by the extension are small and loaded by URL (not via `UIImage(named:)` + re-encoding). See `Gallery Shelf/ContentProvider.swift`.

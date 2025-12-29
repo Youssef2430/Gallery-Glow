@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Combine
+import UIKit
 
 // MARK: - Gradient Palette
 
@@ -17,9 +18,9 @@ enum GradientPalette: String, CaseIterable, Identifiable {
     case oceanBlue = "Ocean Blue"
     case sunriseGold = "Sunrise Gold"
     case aurora = "Aurora"
-    
+
     var id: String { rawValue }
-    
+
     var colors: [Color] {
         switch self {
         case .random:
@@ -36,7 +37,7 @@ enum GradientPalette: String, CaseIterable, Identifiable {
             return GradientColorGenerator.allPalettes[4]
         }
     }
-    
+
     var previewColors: [Color] {
         colors
     }
@@ -46,28 +47,28 @@ enum GradientPalette: String, CaseIterable, Identifiable {
 
 struct GradientScreensaverView: View {
     let palette: GradientPalette
-    
+
     @Environment(\.dismiss) private var dismiss
     @State private var startDate = Date()
     @State private var colors: [Color] = []
     @State private var nextColors: [Color] = []
     @State private var colorTransition: Double = 0
-    
+
     let colorTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
-    
+
     var body: some View {
         ZStack {
             // Solid background to prevent any bleed-through
             Color(currentColors.first ?? .black)
                 .ignoresSafeArea()
-            
+
             TimelineView(.animation(minimumInterval: 1.0/60.0)) { timeline in
                 let time = timeline.date.timeIntervalSince(startDate)
-                
+
                 GeometryReader { geo in
                     let blurRadius = min(geo.size.width, geo.size.height) * 0.04
                     let padding = blurRadius * 3
-                    
+
                     Canvas { context, size in
                         drawFluidGradient(context: context, size: size, time: time)
                     }
@@ -85,6 +86,12 @@ struct GradientScreensaverView: View {
             startDate = Date()
             colors = GradientColorGenerator.generateColors(for: palette)
             nextColors = colors
+            // Prevent TV from going into power saving mode while displaying gradient
+            UIApplication.shared.isIdleTimerDisabled = true
+        }
+        .onDisappear {
+            // Re-enable idle timer when leaving the view
+            UIApplication.shared.isIdleTimerDisabled = false
         }
         .onReceive(colorTimer) { _ in
             transitionToNewColors()
@@ -93,20 +100,20 @@ struct GradientScreensaverView: View {
             dismiss()
         }
     }
-    
+
     private var currentColors: [Color] {
         if colors.isEmpty { return palette.colors }
         if colorTransition <= 0 { return colors }
-        
+
         return zip(colors, nextColors).map { current, next in
             interpolateColor(from: current, to: next, progress: colorTransition)
         }
     }
-    
+
     private func drawFluidGradient(context: GraphicsContext, size: CGSize, time: Double) {
         let cols = currentColors
         guard cols.count >= 4 else { return }
-        
+
         // Fill entire background with blended color to prevent dark corners
         let bgGradient = Gradient(colors: [cols[0], cols[1], cols[2], cols[3]])
         context.fill(
@@ -117,7 +124,7 @@ struct GradientScreensaverView: View {
                 endPoint: CGPoint(x: size.width, y: size.height)
             )
         )
-        
+
         // Animated blob positions - 8 blobs for full coverage including corners
         let blobs: [(baseX: Double, baseY: Double, freqX: Double, freqY: Double, phase: Double, colorIdx: Int, radius: Double)] = [
             // Corner blobs - fixed positions with slight movement
@@ -131,24 +138,24 @@ struct GradientScreensaverView: View {
             (0.7, 0.5, 0.13, 0.15, 0.5, 2, 0.7),      // Right-center
             (0.5, 0.7, 0.15, 0.13, 3.5, 3, 0.7),      // Bottom-center
         ]
-        
+
         for blob in blobs {
             let x = blob.baseX + 0.15 * sin(time * blob.freqX + blob.phase)
             let y = blob.baseY + 0.15 * cos(time * blob.freqY + blob.phase * 0.7)
-            
+
             let center = CGPoint(x: x * size.width, y: y * size.height)
             let radius = max(size.width, size.height) * blob.radius
-            
+
             let color = cols[blob.colorIdx % cols.count]
             let nextColor = cols[(blob.colorIdx + 1) % cols.count]
-            
+
             let gradient = Gradient(colors: [
                 color.opacity(0.9),
                 color.opacity(0.6),
                 nextColor.opacity(0.3),
                 nextColor.opacity(0.1)
             ])
-            
+
             context.fill(
                 Path(ellipseIn: CGRect(
                     x: center.x - radius,
@@ -165,7 +172,7 @@ struct GradientScreensaverView: View {
             )
         }
     }
-    
+
     private func interpolateColor(from: Color, to: Color, progress: Double) -> Color {
         let fromC = UIColor(from).cgColor.components ?? [0, 0, 0, 1]
         let toC = UIColor(to).cgColor.components ?? [0, 0, 0, 1]
@@ -175,24 +182,24 @@ struct GradientScreensaverView: View {
             blue: fromC[2] + (toC[2] - fromC[2]) * progress
         )
     }
-    
+
     private func transitionToNewColors() {
         nextColors = GradientColorGenerator.generateColors(for: palette)
-        
+
         // Smooth 8-second transition
         let duration = 8.0
         let steps = 120 // More steps = smoother
         let stepDuration = duration / Double(steps)
-        
+
         for i in 0...steps {
             DispatchQueue.main.asyncAfter(deadline: .now() + stepDuration * Double(i)) { [self] in
                 let progress = Double(i) / Double(steps)
                 // Ease in-out curve
-                let eased = progress < 0.5 
-                    ? 2 * progress * progress 
+                let eased = progress < 0.5
+                    ? 2 * progress * progress
                     : 1 - pow(-2 * progress + 2, 2) / 2
                 colorTransition = eased
-                
+
                 if i == steps {
                     colors = nextColors
                     colorTransition = 0
@@ -242,22 +249,22 @@ struct GradientColorGenerator {
             Color(red: 0.0, green: 0.9, blue: 0.5),      // Teal
         ],
     ]
-    
+
     static func generateColors(for palette: GradientPalette = .random) -> [Color] {
         let basePalette: [Color]
-        
+
         switch palette {
         case .random:
             basePalette = allPalettes.randomElement()!
         default:
             basePalette = palette.colors
         }
-        
+
         return basePalette.map { color in
             adjustColor(color)
         }.shuffled()
     }
-    
+
     private static func adjustColor(_ color: Color) -> Color {
         let components = UIColor(color).cgColor.components ?? [0, 0, 0, 1]
         let variation = 0.12
@@ -267,7 +274,7 @@ struct GradientColorGenerator {
             blue: clamp(components[2] + Double.random(in: -variation...variation))
         )
     }
-    
+
     private static func clamp(_ value: Double) -> Double {
         max(0, min(1, value))
     }

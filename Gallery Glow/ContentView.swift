@@ -11,11 +11,7 @@ struct ContentView: View {
     private let data = PaintingData.shared
     @State private var selectedPainting: Painting?
     @State private var selectedGradient: GradientPalette?
-    
-    private let artistColumns = [
-        GridItem(.adaptive(minimum: 300, maximum: 400), spacing: 40)
-    ]
-    
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -24,10 +20,15 @@ struct ContentView: View {
                     PaintingOfTheDaySection(painting: data.paintingOfTheDay()) { painting in
                         selectedPainting = painting
                     }
-                    
+
+                    // Director's Cut Section
+                    DirectorsCutSection(paintings: data.directorsCut) { painting in
+                        selectedPainting = painting
+                    }
+
                     // Artists Section
                     ArtistsSection(artists: data.artists)
-                    
+
                     // Gradients Section
                     GradientsSection { palette in
                         selectedGradient = palette
@@ -52,20 +53,20 @@ struct PaintingOfTheDaySection: View {
     let painting: Painting
     let onSelect: (Painting) -> Void
     @FocusState private var isFocused: Bool
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
             Text("Painting of the Day")
                 .font(.title3)
                 .fontWeight(.semibold)
                 .padding(.horizontal, 64)
-            
+
             Button(action: { onSelect(painting) }) {
                 ZStack(alignment: .bottomLeading) {
                     PaintingImage(painting.imageName)
                         .frame(height: 500)
                         .clipped()
-                    
+
                     // Gradient overlay
                     LinearGradient(
                         colors: [.clear, .black.opacity(0.7)],
@@ -73,17 +74,17 @@ struct PaintingOfTheDaySection: View {
                         endPoint: .bottom
                     )
                     .frame(height: 200)
-                    
+
                     // Info
                     VStack(alignment: .leading, spacing: 8) {
                         Text(painting.title)
                             .font(.title2)
                             .fontWeight(.bold)
-                        
+
                         Text("\(painting.artistName) · \(String(painting.year))")
                             .font(.callout)
                             .foregroundColor(.secondary)
-                        
+
                         Text(painting.description)
                             .font(.body)
                             .foregroundColor(.secondary)
@@ -101,22 +102,76 @@ struct PaintingOfTheDaySection: View {
     }
 }
 
+// MARK: - Director's Cut Section
+
+struct DirectorsCutSection: View {
+    let paintings: [Painting]
+    let onSelect: (Painting) -> Void
+
+    private let columns = [
+        GridItem(.adaptive(minimum: 400, maximum: 500), spacing: 40)
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            Text("Director's Cut")
+                .font(.title3)
+                .fontWeight(.semibold)
+                .padding(.horizontal, 64)
+
+            LazyVGrid(columns: columns, spacing: 40) {
+                ForEach(paintings) { painting in
+                    Button(action: { onSelect(painting) }) {
+                        DirectorsCutCard(painting: painting)
+                    }
+                    .buttonStyle(.card)
+                }
+            }
+            .padding(.horizontal, 64)
+        }
+    }
+}
+
+struct DirectorsCutCard: View {
+    let painting: Painting
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            PaintingImage(painting.imageName)
+                .aspectRatio(16/9, contentMode: .fill)
+                .frame(height: 225)
+                .clipped()
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(painting.title)
+                    .font(.headline)
+
+                Text("\(painting.artistName) · \(String(painting.year))")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+        }
+    }
+}
+
 // MARK: - Artists Section
 
 struct ArtistsSection: View {
     let artists: [Artist]
-    
+
     private let columns = [
         GridItem(.adaptive(minimum: 300, maximum: 400), spacing: 40)
     ]
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
             Text("Artists")
                 .font(.title3)
                 .fontWeight(.semibold)
                 .padding(.horizontal, 64)
-            
+
             LazyVGrid(columns: columns, spacing: 40) {
                 ForEach(artists) { artist in
                     NavigationLink(destination: ArtistView(artist: artist)) {
@@ -132,7 +187,7 @@ struct ArtistsSection: View {
 
 struct ArtistCard: View {
     let artist: Artist
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Show first painting as preview
@@ -141,11 +196,11 @@ struct ArtistCard: View {
                     .frame(height: 200)
                     .clipped()
             }
-            
+
             VStack(alignment: .leading, spacing: 4) {
                 Text(artist.name)
                     .font(.headline)
-                
+
                 Text("\(artist.nationality) · \(artist.paintings.count) works")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
@@ -160,18 +215,18 @@ struct ArtistCard: View {
 
 struct GradientsSection: View {
     let onSelect: (GradientPalette) -> Void
-    
+
     private let columns = [
         GridItem(.adaptive(minimum: 300, maximum: 400), spacing: 40)
     ]
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
             Text("Gradients")
                 .font(.title3)
                 .fontWeight(.semibold)
                 .padding(.horizontal, 64)
-            
+
             LazyVGrid(columns: columns, spacing: 40) {
                 ForEach(GradientPalette.allCases) { palette in
                     Button(action: { onSelect(palette) }) {
@@ -187,11 +242,11 @@ struct GradientsSection: View {
 
 struct GradientCard: View {
     let palette: GradientPalette
-    
+
     private var colors: [Color] {
         palette.previewColors
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Gradient preview - fluid blob style
@@ -203,7 +258,7 @@ struct GradientCard: View {
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
-                    
+
                     // Blob 1 - top left
                     Circle()
                         .fill(
@@ -216,7 +271,7 @@ struct GradientCard: View {
                         )
                         .frame(width: geo.size.width * 0.9)
                         .offset(x: -geo.size.width * 0.25, y: -geo.size.height * 0.15)
-                    
+
                     // Blob 2 - bottom right
                     Circle()
                         .fill(
@@ -229,7 +284,7 @@ struct GradientCard: View {
                         )
                         .frame(width: geo.size.width * 0.8)
                         .offset(x: geo.size.width * 0.3, y: geo.size.height * 0.25)
-                    
+
                     // Blob 3 - center
                     Circle()
                         .fill(
@@ -247,11 +302,11 @@ struct GradientCard: View {
             .frame(height: 200)
             .blur(radius: 20)
             .clipped()
-            
+
             VStack(alignment: .leading, spacing: 4) {
                 Text(palette.rawValue)
                     .font(.headline)
-                
+
                 Text(paletteDescription)
                     .font(.subheadline)
                     .foregroundColor(.secondary)
@@ -260,7 +315,7 @@ struct GradientCard: View {
             .padding(.vertical, 12)
         }
     }
-    
+
     private var paletteDescription: String {
         switch palette {
         case .random:
