@@ -18,11 +18,13 @@ struct ContentView: View {
                 VStack(alignment: .leading, spacing: 60) {
                     // Painting of the Day
                     PaintingOfTheDaySection(painting: data.paintingOfTheDay()) { painting in
+                        RecentlyUsedManager.shared.addPainting(painting)
                         selectedPainting = painting
                     }
 
                     // Director's Cut Section
                     DirectorsCutSection(paintings: data.directorsCut) { painting in
+                        RecentlyUsedManager.shared.addPainting(painting)
                         selectedPainting = painting
                     }
 
@@ -31,6 +33,10 @@ struct ContentView: View {
 
                     // Gradients Section
                     GradientsSection { palette in
+                        RecentlyUsedManager.shared.addGradient(
+                            palette: palette.rawValue,
+                            description: RecentlyUsedManager.gradientDescription(for: palette.rawValue)
+                        )
                         selectedGradient = palette
                     }
                 }
