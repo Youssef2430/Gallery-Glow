@@ -5,8 +5,8 @@
 //  Created by Youssef Chouay on 2025-12-28.
 //
 
+import Foundation
 import TVServices
-import UIKit
 
 class ContentProvider: TVTopShelfContentProvider {
 
@@ -79,20 +79,21 @@ class ContentProvider: TVTopShelfContentProvider {
     }
     
     private func imageURL(for imageName: String) -> URL? {
-        // Try to get image from asset catalog and save to cache for URL access
-        guard let image = UIImage(named: imageName) else { return nil }
-        
-        let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
-        let safeFileName = imageName.replacingOccurrences(of: "/", with: "_") + ".jpg"
-        let fileURL = cacheDir.appendingPathComponent(safeFileName)
-        
-        // Write image to cache if not exists
-        if !FileManager.default.fileExists(atPath: fileURL.path) {
-            if let data = image.jpegData(compressionQuality: 0.9) {
-                try? data.write(to: fileURL)
-            }
-        }
-        
-        return fileURL
+        // IMPORTANT: Top Shelf extensions have tight memory budgets.
+        // Avoid decoding/re-encoding large images at runtime (e.g. UIImage(named:) + jpegData()),
+        // which can easily trigger jetsam on device.
+        //
+        // Instead, ship small JPEGs as regular bundle resources under Gallery Shelf/TopShelfImages
+        // and return file URLs directly.
+        let resourceName = imageName.replacingOccurrences(of: "/", with: "_")
+
+        // Depending on how the files are added to the Xcode project, resources may be flattened into the
+        // bundle root (Copy Bundle Resources) or preserved as a folder reference. Try both.
+        return Bundle.main.url(forResource: resourceName, withExtension: "jpg", subdirectory: "TopShelfImages")
+            ?? Bundle.main.url(forResource: resourceName, withExtension: "jpeg", subdirectory: "TopShelfImages")
+            ?? Bundle.main.url(forResource: resourceName, withExtension: "png", subdirectory: "TopShelfImages")
+            ?? Bundle.main.url(forResource: resourceName, withExtension: "jpg")
+            ?? Bundle.main.url(forResource: resourceName, withExtension: "jpeg")
+            ?? Bundle.main.url(forResource: resourceName, withExtension: "png")
     }
 }

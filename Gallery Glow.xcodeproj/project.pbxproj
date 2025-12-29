@@ -72,20 +72,12 @@
 			);
 			target = EF8949A72F01D85A00E4308C /* Gallery Shelf */;
 		};
-		EF8949BD2F01E90400E4308C /* Exceptions for "Gallery Glow" folder in "Gallery Glow" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"Gallery-Glow-Info.plist",
-			);
-			target = EF89496D2F01CC9D00E4308C /* Gallery Glow */;
-		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		EF8949702F01CC9D00E4308C /* Gallery Glow */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				EF8949BD2F01E90400E4308C /* Exceptions for "Gallery Glow" folder in "Gallery Glow" target */,
 				EF8949B92F01E67D00E4308C /* Exceptions for "Gallery Glow" folder in "Gallery Shelf" target */,
 			);
 			path = "Gallery Glow";
@@ -525,6 +517,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7C45645JW6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Gallery-Glow-Info.plist";
@@ -554,6 +547,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7C45645JW6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Gallery-Glow-Info.plist";
@@ -661,6 +655,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7C45645JW6;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Gallery Shelf/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Gallery Shelf";
@@ -688,6 +683,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7C45645JW6;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Gallery Shelf/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Gallery Shelf";
