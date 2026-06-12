@@ -9,7 +9,11 @@ import SwiftUI
 
 struct ArtistView: View {
     let artist: Artist
+    @EnvironmentObject private var purchaseManager: PurchaseManager
+
     @State private var selectedPainting: Painting?
+    @State private var pendingPainting: Painting?
+    @State private var showPaywall = false
 
     private let columns = [
         GridItem(.adaptive(minimum: 400, maximum: 500), spacing: 48)
@@ -37,8 +41,7 @@ struct ArtistView: View {
                 LazyVGrid(columns: columns, spacing: 48) {
                     ForEach(artist.paintings) { painting in
                         PaintingCard(painting: painting) {
-                            RecentlyUsedManager.shared.addPainting(painting)
-                            selectedPainting = painting
+                            requestPainting(painting)
                         }
                     }
                 }
@@ -50,6 +53,38 @@ struct ArtistView: View {
         .fullScreenCover(item: $selectedPainting) { painting in
             ScreensaverView(painting: painting)
         }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView {
+                presentPendingPaintingIfUnlocked()
+            }
+            .environmentObject(purchaseManager)
+        }
+        .onChange(of: purchaseManager.isUnlocked) { _, unlocked in
+            guard unlocked else { return }
+            presentPendingPaintingIfUnlocked()
+        }
+    }
+
+    private func requestPainting(_ painting: Painting) {
+        guard purchaseManager.isUnlocked else {
+            pendingPainting = painting
+            showPaywall = true
+            return
+        }
+
+        presentPainting(painting)
+    }
+
+    private func presentPendingPaintingIfUnlocked() {
+        guard purchaseManager.isUnlocked, let painting = pendingPainting else { return }
+        pendingPainting = nil
+        showPaywall = false
+        presentPainting(painting)
+    }
+
+    private func presentPainting(_ painting: Painting) {
+        RecentlyUsedManager.shared.addPainting(painting)
+        selectedPainting = painting
     }
 }
 
@@ -87,6 +122,7 @@ struct PaintingCard: View {
     NavigationStack {
         ArtistView(artist: PaintingData.shared.artists[0])
     }
+    .environmentObject(PurchaseManager(startsTransactionListener: false))
 }
 
 #Preview("PaintingCard") {

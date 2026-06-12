@@ -9,23 +9,39 @@ import SwiftUI
 
 struct ContentView: View {
     private let data = PaintingData.shared
+    @EnvironmentObject private var purchaseManager: PurchaseManager
+
     @State private var selectedPainting: Painting?
     @State private var selectedGradient: GradientPalette?
+    @State private var pendingPainting: Painting?
+    @State private var pendingGradient: GradientPalette?
+    @State private var showPaywall = false
+
+    // Cache painting of the day — deterministic per day, no need to recompute on every body evaluation
+    @State private var paintingOfTheDay: Painting = PaintingData.shared.paintingOfTheDay()
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 60) {
+                    if !purchaseManager.isUnlocked {
+                        PurchaseBanner(
+                            price: purchaseManager.lifetimeDisplayPrice,
+                            isLoading: purchaseManager.isLoadingProducts
+                        ) {
+                            showPaywall = true
+                        }
+                        .padding(.horizontal, 64)
+                    }
+
                     // Painting of the Day
-                    PaintingOfTheDaySection(painting: data.paintingOfTheDay()) { painting in
-                        RecentlyUsedManager.shared.addPainting(painting)
-                        selectedPainting = painting
+                    PaintingOfTheDaySection(painting: paintingOfTheDay) { painting in
+                        requestPainting(painting)
                     }
 
                     // Director's Cut Section
                     DirectorsCutSection(paintings: data.directorsCut) { painting in
-                        RecentlyUsedManager.shared.addPainting(painting)
-                        selectedPainting = painting
+                        requestPainting(painting)
                     }
 
                     // Artists Section
@@ -33,11 +49,7 @@ struct ContentView: View {
 
                     // Gradients Section
                     GradientsSection { palette in
-                        RecentlyUsedManager.shared.addGradient(
-                            palette: palette.rawValue,
-                            description: RecentlyUsedManager.gradientDescription(for: palette.rawValue)
-                        )
-                        selectedGradient = palette
+                        requestGradient(palette)
                     }
                 }
                 .padding(.vertical, 48)
@@ -49,7 +61,66 @@ struct ContentView: View {
             .fullScreenCover(item: $selectedGradient) { palette in
                 GradientScreensaverView(palette: palette)
             }
+            .sheet(isPresented: $showPaywall) {
+                PaywallView {
+                    presentPendingSelectionIfUnlocked()
+                }
+                .environmentObject(purchaseManager)
+            }
+            .onChange(of: purchaseManager.isUnlocked) { _, unlocked in
+                guard unlocked else { return }
+                presentPendingSelectionIfUnlocked()
+            }
         }
+    }
+
+    private func requestPainting(_ painting: Painting) {
+        guard purchaseManager.isUnlocked else {
+            pendingPainting = painting
+            pendingGradient = nil
+            showPaywall = true
+            return
+        }
+
+        presentPainting(painting)
+    }
+
+    private func requestGradient(_ palette: GradientPalette) {
+        guard purchaseManager.isUnlocked else {
+            pendingPainting = nil
+            pendingGradient = palette
+            showPaywall = true
+            return
+        }
+
+        presentGradient(palette)
+    }
+
+    private func presentPendingSelectionIfUnlocked() {
+        guard purchaseManager.isUnlocked else { return }
+
+        if let painting = pendingPainting {
+            pendingPainting = nil
+            presentPainting(painting)
+        } else if let palette = pendingGradient {
+            pendingGradient = nil
+            presentGradient(palette)
+        }
+
+        showPaywall = false
+    }
+
+    private func presentPainting(_ painting: Painting) {
+        RecentlyUsedManager.shared.addPainting(painting)
+        selectedPainting = painting
+    }
+
+    private func presentGradient(_ palette: GradientPalette) {
+        RecentlyUsedManager.shared.addGradient(
+            palette: palette.rawValue,
+            description: palette.displayDescription
+        )
+        selectedGradient = palette
     }
 }
 
@@ -306,14 +377,17 @@ struct GradientCard: View {
                 }
             }
             .frame(height: 200)
-            .blur(radius: 20)
+            .blur(radius: 12)
+            // Rasterize the blurred blobs once instead of re-evaluating the
+            // gradient + blur filter chain every frame the card is on screen
+            .drawingGroup()
             .clipped()
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(palette.rawValue)
                     .font(.headline)
 
-                Text(paletteDescription)
+                Text(palette.displayDescription)
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -321,25 +395,9 @@ struct GradientCard: View {
             .padding(.vertical, 12)
         }
     }
-
-    private var paletteDescription: String {
-        switch palette {
-        case .random:
-            return "Surprise me"
-        case .magentaPurple:
-            return "Neon nights"
-        case .pinkOrange:
-            return "Warm sunset"
-        case .oceanBlue:
-            return "Deep sea"
-        case .sunriseGold:
-            return "Golden hour"
-        case .aurora:
-            return "Northern lights"
-        }
-    }
 }
 
 #Preview {
     ContentView()
+        .environmentObject(PurchaseManager(startsTransactionListener: false))
 }

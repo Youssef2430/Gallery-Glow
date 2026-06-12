@@ -8,152 +8,63 @@
 import Foundation
 import TVServices
 
-// MARK: - Recently Used Item (must match main app's RecentlyUsedManager)
-
-struct RecentlyUsedItem: Codable {
-    enum ItemType: String, Codable {
-        case painting
-        case gradient
-    }
-
-    let type: ItemType
-    let identifier: String
-    let title: String
-    let subtitle: String?
-    let timestamp: Date
-}
-
-// MARK: - Content Provider
-
 class ContentProvider: TVTopShelfContentProvider {
-
-    /// App Group identifier for sharing data with main app
-    private let appGroupIdentifier = "group.com.galleryglow.shared"
-    private let recentlyUsedKey = "recentlyUsedItems"
-
-    // Director's Cut paintings (16:9 optimized)
-    private let directorsCut = [
-        ("Van Gogh/Starry_Night_Over_the_Rhone", "Starry Night Over the Rhône", "Vincent van Gogh"),
-        ("Monet/the_bridge_at_argenteuil_1983.1.24", "The Bridge at Argenteuil", "Claude Monet"),
-        ("Raphael/School_of_Athens", "The School of Athens", "Raphael"),
-        ("Hopper/Nighthawks", "Nighthawks", "Edward Hopper"),
-        ("Botticelli/Birth_of_Venus", "The Birth of Venus", "Sandro Botticelli"),
-        ("Hokusai/Great_Wave", "The Great Wave off Kanagawa", "Katsushika Hokusai")
-    ]
-
-    // Gradient palettes
-    private let gradientPalettes = [
-        ("Random", "Surprise me"),
-        ("Magenta Purple", "Neon nights"),
-        ("Pink Orange", "Warm sunset"),
-        ("Ocean Blue", "Deep sea"),
-        ("Sunrise Gold", "Golden hour"),
-        ("Aurora", "Northern lights")
-    ]
-
-    /// Returns the painting of the day based on current date
-    private func paintingOfTheDay() -> (String, String, String) {
-        let calendar = Calendar.current
-        let dayOfYear = calendar.ordinality(of: .day, in: .year, for: Date()) ?? 1
-        let index = (dayOfYear - 1) % directorsCut.count
-        return directorsCut[index]
-    }
-
-    /// Get recently used items from shared UserDefaults
-    private func getRecentlyUsedItems() -> [RecentlyUsedItem] {
-        guard let defaults = UserDefaults(suiteName: appGroupIdentifier),
-              let data = defaults.data(forKey: recentlyUsedKey),
-              let items = try? JSONDecoder().decode([RecentlyUsedItem].self, from: data) else {
-            return []
-        }
-        return items.sorted { $0.timestamp > $1.timestamp }
-    }
 
     override func loadTopShelfContent() async -> TVTopShelfContent? {
         var sections: [TVTopShelfItemCollection<TVTopShelfSectionedItem>] = []
 
         // MARK: Section 1 - Painting of the Day
-        let potd = paintingOfTheDay()
-        let featuredItem = TVTopShelfSectionedItem(identifier: "potd_\(potd.0)")
-        featuredItem.title = potd.1
+        let potd = PaintingData.shared.paintingOfTheDay()
 
-        if let imageURL = imageURL(for: potd.0) {
-            featuredItem.setImageURL(imageURL, for: .screenScale1x)
-            featuredItem.setImageURL(imageURL, for: .screenScale2x)
-        }
-
-        if let url = URL(string: "galleryglow://painting/\(potd.0.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? potd.0)") {
-            featuredItem.displayAction = TVTopShelfAction(url: url)
-            featuredItem.playAction = featuredItem.displayAction
-        }
-
-        let featuredSection = TVTopShelfItemCollection(items: [featuredItem])
+        let featuredSection = TVTopShelfItemCollection(items: [paintingItem(for: potd, idPrefix: "potd")])
         featuredSection.title = "Painting of the Day"
         sections.append(featuredSection)
 
         // MARK: Section 2 - Recently Used
-        let recentItems = getRecentlyUsedItems()
-        if !recentItems.isEmpty {
-            var recentTopShelfItems: [TVTopShelfSectionedItem] = []
+        var recentTopShelfItems: [TVTopShelfSectionedItem] = []
 
-            for recentItem in recentItems.prefix(8) {
-                let item = TVTopShelfSectionedItem(identifier: "recent_\(recentItem.identifier)")
-                item.title = recentItem.title
+        for recentItem in RecentlyUsedManager.shared.getRecentItems().prefix(8) {
+            let item = TVTopShelfSectionedItem(identifier: "recent_\(recentItem.identifier)")
+            item.title = recentItem.title
+            // Pre-rendered images are 16:9; without this the system crops them
+            // into squares and upscales, which looks soft
+            item.imageShape = .hdtv
 
-                switch recentItem.type {
-                case .painting:
-                    if let imageURL = imageURL(for: recentItem.identifier) {
-                        item.setImageURL(imageURL, for: .screenScale1x)
-                        item.setImageURL(imageURL, for: .screenScale2x)
-                    }
-                    if let url = URL(string: "galleryglow://painting/\(recentItem.identifier.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? recentItem.identifier)") {
-                        item.displayAction = TVTopShelfAction(url: url)
-                        item.playAction = item.displayAction
-                    }
-
-                case .gradient:
-                    if let imageURL = gradientImageURL(for: recentItem.identifier) {
-                        item.setImageURL(imageURL, for: .screenScale1x)
-                        item.setImageURL(imageURL, for: .screenScale2x)
-                    }
-                    if let url = URL(string: "galleryglow://gradient/\(recentItem.identifier.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? recentItem.identifier)") {
-                        item.displayAction = TVTopShelfAction(url: url)
-                        item.playAction = item.displayAction
-                    }
+            switch recentItem.type {
+            case .painting:
+                if let imageURL = imageURL(for: recentItem.identifier) {
+                    item.setImageURL(imageURL, for: .screenScale1x)
+                    item.setImageURL(imageURL, for: .screenScale2x)
+                }
+                if let url = deepLinkURL(kind: "painting", identifier: recentItem.identifier) {
+                    item.displayAction = TVTopShelfAction(url: url)
+                    item.playAction = item.displayAction
                 }
 
-                recentTopShelfItems.append(item)
+            case .gradient:
+                if let imageURL = gradientImageURL(for: recentItem.identifier) {
+                    item.setImageURL(imageURL, for: .screenScale1x)
+                    item.setImageURL(imageURL, for: .screenScale2x)
+                }
+                if let url = deepLinkURL(kind: "gradient", identifier: recentItem.identifier) {
+                    item.displayAction = TVTopShelfAction(url: url)
+                    item.playAction = item.displayAction
+                }
             }
 
-            if !recentTopShelfItems.isEmpty {
-                let recentSection = TVTopShelfItemCollection(items: recentTopShelfItems)
-                recentSection.title = "Recently Used"
-                sections.append(recentSection)
-            }
+            recentTopShelfItems.append(item)
+        }
+
+        if !recentTopShelfItems.isEmpty {
+            let recentSection = TVTopShelfItemCollection(items: recentTopShelfItems)
+            recentSection.title = "Recently Used"
+            sections.append(recentSection)
         }
 
         // MARK: Section 3 - Director's Cut
-        var directorsCutItems: [TVTopShelfSectionedItem] = []
-
-        for (imageName, title, _) in directorsCut {
-            // Skip if it's the painting of the day (already featured)
-            if imageName == potd.0 { continue }
-
-            let item = TVTopShelfSectionedItem(identifier: "dc_\(imageName)")
-            item.title = title
-
-            if let imageURL = imageURL(for: imageName) {
-                item.setImageURL(imageURL, for: .screenScale1x)
-                item.setImageURL(imageURL, for: .screenScale2x)
-            }
-
-            if let url = URL(string: "galleryglow://painting/\(imageName.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? imageName)") {
-                item.displayAction = TVTopShelfAction(url: url)
-                item.playAction = item.displayAction
-            }
-
-            directorsCutItems.append(item)
-        }
+        let directorsCutItems = PaintingData.shared.directorsCut
+            .filter { $0.id != potd.id } // skip the painting of the day (already featured)
+            .map { paintingItem(for: $0, idPrefix: "dc") }
 
         if !directorsCutItems.isEmpty {
             let directorsCutSection = TVTopShelfItemCollection(items: directorsCutItems)
@@ -162,6 +73,31 @@ class ContentProvider: TVTopShelfContentProvider {
         }
 
         return TVTopShelfSectionedContent(sections: sections)
+    }
+
+    // MARK: - Item Builders
+
+    private func paintingItem(for painting: Painting, idPrefix: String) -> TVTopShelfSectionedItem {
+        let item = TVTopShelfSectionedItem(identifier: "\(idPrefix)_\(painting.imageName)")
+        item.title = painting.title
+        item.imageShape = .hdtv
+
+        if let imageURL = imageURL(for: painting.imageName) {
+            item.setImageURL(imageURL, for: .screenScale1x)
+            item.setImageURL(imageURL, for: .screenScale2x)
+        }
+
+        if let url = deepLinkURL(kind: "painting", identifier: painting.imageName) {
+            item.displayAction = TVTopShelfAction(url: url)
+            item.playAction = item.displayAction
+        }
+
+        return item
+    }
+
+    private func deepLinkURL(kind: String, identifier: String) -> URL? {
+        let encoded = identifier.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? identifier
+        return URL(string: "galleryglow://\(kind)/\(encoded)")
     }
 
     // MARK: - Image URL Helpers

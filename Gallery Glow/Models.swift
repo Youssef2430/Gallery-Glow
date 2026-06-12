@@ -8,13 +8,14 @@
 import Foundation
 
 struct Artist: Identifiable, Hashable {
-    let id = UUID()
+    /// Deterministic ID derived from artist name (stable across app launches)
+    var id: String { name }
     let name: String
     let birthYear: Int
     let deathYear: Int?
     let nationality: String
     let paintings: [Painting]
-    
+
     var lifespan: String {
         if let death = deathYear {
             return "\(birthYear) - \(death)"
@@ -24,14 +25,15 @@ struct Artist: Identifiable, Hashable {
 }
 
 struct Painting: Identifiable, Hashable {
-    let id = UUID()
+    /// Deterministic ID derived from imageName (unique per painting, stable across app launches)
+    var id: String { imageName }
     let title: String
     let year: Int
     let artistName: String
     let imageName: String
     let description: String
     let forceFullScreen: Bool
-    
+
     init(title: String, year: Int, artistName: String, imageName: String, description: String, forceFullScreen: Bool = false) {
         self.title = title
         self.year = year

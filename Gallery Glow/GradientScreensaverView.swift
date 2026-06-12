@@ -6,13 +6,11 @@
 //
 
 import SwiftUI
-import Combine
 import UIKit
 
 // MARK: - Gradient Palette
 
 enum GradientPalette: String, CaseIterable, Identifiable {
-    case random = "Random"
     case magentaPurple = "Magenta Purple"
     case pinkOrange = "Pink Orange"
     case oceanBlue = "Ocean Blue"
@@ -23,8 +21,6 @@ enum GradientPalette: String, CaseIterable, Identifiable {
 
     var colors: [Color] {
         switch self {
-        case .random:
-            return GradientColorGenerator.allPalettes.randomElement()!
         case .magentaPurple:
             return GradientColorGenerator.allPalettes[0]
         case .pinkOrange:
@@ -38,8 +34,22 @@ enum GradientPalette: String, CaseIterable, Identifiable {
         }
     }
 
-    var previewColors: [Color] {
-        colors
+    var previewColors: [Color] { colors }
+
+    /// Description for display in cards and Top Shelf
+    var displayDescription: String {
+        switch self {
+        case .magentaPurple:
+            return "Neon nights"
+        case .pinkOrange:
+            return "Warm sunset"
+        case .oceanBlue:
+            return "Deep sea"
+        case .sunriseGold:
+            return "Golden hour"
+        case .aurora:
+            return "Northern lights"
+        }
     }
 }
 
@@ -50,11 +60,15 @@ struct GradientScreensaverView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var startDate = Date()
-    @State private var colors: [Color] = []
-    @State private var nextColors: [Color] = []
-    @State private var colorTransition: Double = 0
 
-    let colorTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
+    // Current and next color components stored as RGBA for cheap interpolation
+    @State private var colorComponents: [SIMD4<Double>] = []
+    @State private var nextColorComponents: [SIMD4<Double>] = []
+
+    // Transition timing is driven outside the render loop so Canvas stays pure.
+    @State private var transitionStartDate: Date?
+    private let transitionDuration: Double = 8.0
+    private let colorChangeInterval: Double = 60.0
 
     var body: some View {
         ZStack {
@@ -62,7 +76,7 @@ struct GradientScreensaverView: View {
             Color(currentColors.first ?? .black)
                 .ignoresSafeArea()
 
-            TimelineView(.animation(minimumInterval: 1.0/60.0)) { timeline in
+            TimelineView(.animation(minimumInterval: 1.0/30.0)) { timeline in
                 let time = timeline.date.timeIntervalSince(startDate)
 
                 GeometryReader { geo in
@@ -70,13 +84,14 @@ struct GradientScreensaverView: View {
                     let padding = blurRadius * 3
 
                     Canvas { context, size in
-                        drawFluidGradient(context: context, size: size, time: time)
+                        drawFluidGradient(context: context, size: size, time: time, at: timeline.date)
                     }
                     .frame(
                         width: geo.size.width + padding * 2,
                         height: geo.size.height + padding * 2
                     )
                     .blur(radius: blurRadius)
+                    .drawingGroup(opaque: true, colorMode: .extendedLinear)
                     .offset(x: -padding, y: -padding)
                 }
             }
@@ -84,34 +99,53 @@ struct GradientScreensaverView: View {
         .ignoresSafeArea(.all)
         .onAppear {
             startDate = Date()
-            colors = GradientColorGenerator.generateColors(for: palette)
-            nextColors = colors
-            // Prevent TV from going into power saving mode while displaying gradient
+            resetColors()
             UIApplication.shared.isIdleTimerDisabled = true
         }
-        .onDisappear {
-            // Re-enable idle timer when leaving the view
-            UIApplication.shared.isIdleTimerDisabled = false
+        .task(id: palette) {
+            await runColorCycle()
         }
-        .onReceive(colorTimer) { _ in
-            transitionToNewColors()
+        .onDisappear {
+            UIApplication.shared.isIdleTimerDisabled = false
         }
         .onExitCommand {
             dismiss()
         }
     }
 
-    private var currentColors: [Color] {
-        if colors.isEmpty { return palette.colors }
-        if colorTransition <= 0 { return colors }
+    /// Compute transition progress from elapsed time (replaces 121 GCD timers)
+    private func transitionProgress(at date: Date) -> Double {
+        guard let start = transitionStartDate else { return 0 }
+        let elapsed = date.timeIntervalSince(start)
+        guard elapsed > 0 else { return 0 }
+        if elapsed >= transitionDuration { return 1.0 }
+        let linear = elapsed / transitionDuration
+        // Ease in-out curve
+        return linear < 0.5
+            ? 2 * linear * linear
+            : 1 - pow(-2 * linear + 2, 2) / 2
+    }
 
-        return zip(colors, nextColors).map { current, next in
-            interpolateColor(from: current, to: next, progress: colorTransition)
+    /// Interpolated colors for the current frame — cheap SIMD math, no UIColor allocation
+    private var currentColors: [Color] {
+        if colorComponents.isEmpty { return palette.colors }
+        return colorComponents.map { simdToColor($0) }
+    }
+
+    private func interpolatedColors(at date: Date) -> [SIMD4<Double>] {
+        let progress = transitionProgress(at: date)
+        if progress <= 0 { return colorComponents }
+        if progress >= 1.0 { return nextColorComponents }
+
+        let p = SIMD4<Double>(repeating: progress)
+        return zip(colorComponents, nextColorComponents).map { current, next in
+            current + (next - current) * p
         }
     }
 
-    private func drawFluidGradient(context: GraphicsContext, size: CGSize, time: Double) {
-        let cols = currentColors
+    private func drawFluidGradient(context: GraphicsContext, size: CGSize, time: Double, at date: Date) {
+        let components = interpolatedColors(at: date)
+        let cols = components.map { simdToColor($0) }
         guard cols.count >= 4 else { return }
 
         // Fill entire background with blended color to prevent dark corners
@@ -173,39 +207,62 @@ struct GradientScreensaverView: View {
         }
     }
 
-    private func interpolateColor(from: Color, to: Color, progress: Double) -> Color {
-        let fromC = UIColor(from).cgColor.components ?? [0, 0, 0, 1]
-        let toC = UIColor(to).cgColor.components ?? [0, 0, 0, 1]
-        return Color(
-            red: fromC[0] + (toC[0] - fromC[0]) * progress,
-            green: fromC[1] + (toC[1] - fromC[1]) * progress,
-            blue: fromC[2] + (toC[2] - fromC[2]) * progress
-        )
+    private func resetColors() {
+        let initialColors = GradientColorGenerator.generateColors(for: palette)
+        colorComponents = initialColors.map { colorToSIMD($0) }
+        nextColorComponents = colorComponents
+        transitionStartDate = nil
     }
 
-    private func transitionToNewColors() {
-        nextColors = GradientColorGenerator.generateColors(for: palette)
+    private func runColorCycle() async {
+        while !Task.isCancelled {
+            guard await sleep(seconds: colorChangeInterval) else { return }
 
-        // Smooth 8-second transition
-        let duration = 8.0
-        let steps = 120 // More steps = smoother
-        let stepDuration = duration / Double(steps)
+            await MainActor.run {
+                beginColorTransition(at: Date())
+            }
 
-        for i in 0...steps {
-            DispatchQueue.main.asyncAfter(deadline: .now() + stepDuration * Double(i)) { [self] in
-                let progress = Double(i) / Double(steps)
-                // Ease in-out curve
-                let eased = progress < 0.5
-                    ? 2 * progress * progress
-                    : 1 - pow(-2 * progress + 2, 2) / 2
-                colorTransition = eased
+            guard await sleep(seconds: transitionDuration) else { return }
 
-                if i == steps {
-                    colors = nextColors
-                    colorTransition = 0
-                }
+            await MainActor.run {
+                finishColorTransition()
             }
         }
+    }
+
+    private func beginColorTransition(at date: Date) {
+        if transitionStartDate != nil {
+            colorComponents = nextColorComponents
+        }
+
+        let newColors = GradientColorGenerator.generateColors(for: palette)
+        nextColorComponents = newColors.map { colorToSIMD($0) }
+        transitionStartDate = date
+    }
+
+    private func finishColorTransition() {
+        colorComponents = nextColorComponents
+        transitionStartDate = nil
+    }
+
+    private func sleep(seconds: Double) async -> Bool {
+        do {
+            try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+            return !Task.isCancelled
+        } catch {
+            return false
+        }
+    }
+
+    // MARK: - SIMD Color Helpers (zero-allocation interpolation)
+
+    private func colorToSIMD(_ color: Color) -> SIMD4<Double> {
+        let c = UIColor(color).cgColor.components ?? [0, 0, 0, 1]
+        return SIMD4<Double>(c[0], c[1], c[2], c.count > 3 ? c[3] : 1.0)
+    }
+
+    private func simdToColor(_ v: SIMD4<Double>) -> Color {
+        Color(red: v.x, green: v.y, blue: v.z)
     }
 }
 
@@ -250,15 +307,8 @@ struct GradientColorGenerator {
         ],
     ]
 
-    static func generateColors(for palette: GradientPalette = .random) -> [Color] {
-        let basePalette: [Color]
-
-        switch palette {
-        case .random:
-            basePalette = allPalettes.randomElement()!
-        default:
-            basePalette = palette.colors
-        }
+    static func generateColors(for palette: GradientPalette) -> [Color] {
+        let basePalette = palette.colors
 
         return basePalette.map { color in
             adjustColor(color)
@@ -281,5 +331,5 @@ struct GradientColorGenerator {
 }
 
 #Preview {
-    GradientScreensaverView(palette: .random)
+    GradientScreensaverView(palette: .aurora)
 }
