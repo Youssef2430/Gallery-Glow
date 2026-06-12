@@ -8,7 +8,9 @@
 import Foundation
 import TVServices
 
-/// Represents a recently used item (either a painting or gradient)
+/// Represents a recently used item (either a painting or gradient).
+/// This file is compiled into both the app and the Gallery Shelf extension targets,
+/// so both sides always share the same JSON schema.
 struct RecentlyUsedItem: Codable, Equatable {
     enum ItemType: String, Codable {
         case painting
@@ -39,12 +41,12 @@ class RecentlyUsedManager {
     /// Maximum number of recent items to keep
     private let maxRecentItems = 10
 
-    /// UserDefaults with App Group for sharing with extension
-    private var sharedDefaults: UserDefaults? {
-        UserDefaults(suiteName: appGroupIdentifier)
-    }
+    /// Cached UserDefaults instance for the App Group (initialized once)
+    private let sharedDefaults: UserDefaults?
 
-    private init() {}
+    private init() {
+        sharedDefaults = UserDefaults(suiteName: appGroupIdentifier)
+    }
 
     // MARK: - Public API
 
@@ -55,18 +57,6 @@ class RecentlyUsedManager {
             identifier: painting.imageName,
             title: painting.title,
             subtitle: painting.artistName,
-            timestamp: Date()
-        )
-        addItem(item)
-    }
-
-    /// Add a painting by image name (for use from anywhere)
-    func addPainting(imageName: String, title: String, artistName: String) {
-        let item = RecentlyUsedItem(
-            type: .painting,
-            identifier: imageName,
-            title: title,
-            subtitle: artistName,
             timestamp: Date()
         )
         addItem(item)
@@ -139,29 +129,5 @@ class RecentlyUsedManager {
 
     private func notifyTopShelfUpdate() {
         TVTopShelfContentProvider.topShelfContentDidChange()
-    }
-}
-
-// MARK: - Convenience Extensions
-
-extension RecentlyUsedManager {
-    /// Gradient descriptions for display
-    static func gradientDescription(for palette: String) -> String {
-        switch palette {
-        case "Random":
-            return "Surprise me"
-        case "Magenta Purple":
-            return "Neon nights"
-        case "Pink Orange":
-            return "Warm sunset"
-        case "Ocean Blue":
-            return "Deep sea"
-        case "Sunrise Gold":
-            return "Golden hour"
-        case "Aurora":
-            return "Northern lights"
-        default:
-            return "Gradient"
-        }
     }
 }
