@@ -2,17 +2,20 @@
 
 Everything below is ready to paste into the version page.
 
-## Screenshots (this folder, all 1920×1080)
+## Screenshots
 
-Upload in this order — lead with the strongest art:
+Uploaded framed promotional screenshots are in
+`app-store-assets/promotional-tv-frame/` at 3840×2160.
 
-1. `02-starry-night.png` — full-screen Van Gogh
-2. `03-great-wave.png` — full-screen Hokusai
-3. `04-birth-of-venus.png` — full-screen Botticelli
-4. `01-home.png` — home screen with Painting of the Day
-5. `06-artist-monet.png` — artist browsing
-6. `05-nighthawks.png` — full-screen Hopper
-7. `07-gradient-aurora.png` — ambient gradient
+Uploaded set:
+
+1. `01-living-gallery.png` — home screen in Apple TV frame
+2. `02-masterpieces-edge-to-edge.png` — full-screen Van Gogh
+3. `03-iconic-works.png` — full-screen Hokusai
+4. `04-classic-art-framed.png` — full-screen Botticelli
+5. `05-browse-by-artist.png` — artist browsing
+6. `06-directors-cut.png` — full-screen Hopper
+7. `07-ambient-gradients.png` — ambient gradient
 
 ## App Information
 

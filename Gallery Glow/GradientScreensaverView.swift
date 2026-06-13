@@ -61,41 +61,31 @@ struct GradientScreensaverView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var startDate = Date()
 
-    // Current and next color components stored as RGBA for cheap interpolation
+    // Current and next colors stored as HSBA components so transitions
+    // interpolate through hue space instead of muddying through grey.
     @State private var colorComponents: [SIMD4<Double>] = []
     @State private var nextColorComponents: [SIMD4<Double>] = []
 
-    // Transition timing is driven outside the render loop so Canvas stays pure.
+    // Transition timing is driven outside the render loop so the mesh stays pure.
     @State private var transitionStartDate: Date?
     private let transitionDuration: Double = 8.0
     private let colorChangeInterval: Double = 60.0
 
     var body: some View {
-        ZStack {
-            // Solid background to prevent any bleed-through
-            Color(currentColors.first ?? .black)
-                .ignoresSafeArea()
+        TimelineView(.animation(minimumInterval: 1.0/30.0)) { timeline in
+            let time = timeline.date.timeIntervalSince(startDate)
+            let base = baseColors(at: timeline.date)
 
-            TimelineView(.animation(minimumInterval: 1.0/30.0)) { timeline in
-                let time = timeline.date.timeIntervalSince(startDate)
-
-                GeometryReader { geo in
-                    let blurRadius = min(geo.size.width, geo.size.height) * 0.04
-                    let padding = blurRadius * 3
-
-                    Canvas { context, size in
-                        drawFluidGradient(context: context, size: size, time: time, at: timeline.date)
-                    }
-                    .frame(
-                        width: geo.size.width + padding * 2,
-                        height: geo.size.height + padding * 2
-                    )
-                    .blur(radius: blurRadius)
-                    .drawingGroup(opaque: true, colorMode: .extendedLinear)
-                    .offset(x: -padding, y: -padding)
-                }
-            }
+            MeshGradient(
+                width: 4,
+                height: 4,
+                points: meshPoints(time: time),
+                colors: meshColors(from: base),
+                smoothsColors: true
+            )
+            .ignoresSafeArea()
         }
+        .background(Color.black)
         .ignoresSafeArea(.all)
         .onAppear {
             startDate = Date()
@@ -113,6 +103,45 @@ struct GradientScreensaverView: View {
         }
     }
 
+    // MARK: - Mesh geometry
+
+    /// 4×4 control-point grid. Edge points stay pinned to their edges so the
+    /// gradient always covers the screen; the four interior points drift on
+    /// independent sine/cosine paths for an organic, fluid motion.
+    private func meshPoints(time: Double) -> [SIMD2<Float>] {
+        func p(_ x: Double, _ y: Double) -> SIMD2<Float> {
+            SIMD2(Float(x), Float(y))
+        }
+        let amp = 0.07 // small enough that interior points never cross or reach an edge
+        func drift(_ baseX: Double, _ baseY: Double, _ fx: Double, _ fy: Double, _ phase: Double) -> SIMD2<Float> {
+            p(baseX + amp * sin(time * fx + phase),
+              baseY + amp * cos(time * fy + phase))
+        }
+        let t1 = 1.0 / 3.0
+        let t2 = 2.0 / 3.0
+        return [
+            p(0, 0),  p(t1, 0),                         p(t2, 0),                         p(1, 0),
+            p(0, t1), drift(t1, t1, 0.12, 0.10, 0.0),   drift(t2, t1, 0.10, 0.13, 1.0),   p(1, t1),
+            p(0, t2), drift(t1, t2, 0.11, 0.12, 2.0),   drift(t2, t2, 0.13, 0.09, 3.0),   p(1, t2),
+            p(0, 1),  p(t1, 1),                         p(t2, 1),                         p(1, 1),
+        ]
+    }
+
+    /// Tile the 4 palette colors diagonally across the 4×4 grid so every color
+    /// appears and they flow in smooth diagonal bands.
+    private func meshColors(from base: [Color]) -> [Color] {
+        var out: [Color] = []
+        out.reserveCapacity(16)
+        for row in 0..<4 {
+            for col in 0..<4 {
+                out.append(base[(row + col) % base.count])
+            }
+        }
+        return out
+    }
+
+    // MARK: - Color interpolation
+
     /// Compute transition progress from elapsed time (replaces 121 GCD timers)
     private func transitionProgress(at date: Date) -> Double {
         guard let start = transitionStartDate else { return 0 }
@@ -126,10 +155,11 @@ struct GradientScreensaverView: View {
             : 1 - pow(-2 * linear + 2, 2) / 2
     }
 
-    /// Interpolated colors for the current frame — cheap SIMD math, no UIColor allocation
-    private var currentColors: [Color] {
-        if colorComponents.isEmpty { return palette.colors }
-        return colorComponents.map { simdToColor($0) }
+    /// The 4 base colors for the current frame, ready to feed the mesh.
+    private func baseColors(at date: Date) -> [Color] {
+        let components = interpolatedColors(at: date)
+        guard components.count >= 4 else { return palette.colors }
+        return components.map { hsbToColor($0) }
     }
 
     private func interpolatedColors(at date: Date) -> [SIMD4<Double>] {
@@ -137,74 +167,23 @@ struct GradientScreensaverView: View {
         if progress <= 0 { return colorComponents }
         if progress >= 1.0 { return nextColorComponents }
 
-        let p = SIMD4<Double>(repeating: progress)
         return zip(colorComponents, nextColorComponents).map { current, next in
-            current + (next - current) * p
+            lerpHSB(current, next, progress)
         }
     }
 
-    private func drawFluidGradient(context: GraphicsContext, size: CGSize, time: Double, at date: Date) {
-        let components = interpolatedColors(at: date)
-        let cols = components.map { simdToColor($0) }
-        guard cols.count >= 4 else { return }
-
-        // Fill entire background with blended color to prevent dark corners
-        let bgGradient = Gradient(colors: [cols[0], cols[1], cols[2], cols[3]])
-        context.fill(
-            Path(CGRect(origin: .zero, size: size)),
-            with: .linearGradient(
-                bgGradient,
-                startPoint: .zero,
-                endPoint: CGPoint(x: size.width, y: size.height)
-            )
+    /// Interpolate two HSBA colors, taking the shortest path around the hue circle.
+    private func lerpHSB(_ a: SIMD4<Double>, _ b: SIMD4<Double>, _ t: Double) -> SIMD4<Double> {
+        var dh = b.x - a.x
+        if dh > 0.5 { dh -= 1 } else if dh < -0.5 { dh += 1 }
+        var h = a.x + dh * t
+        if h < 0 { h += 1 } else if h >= 1 { h -= 1 }
+        return SIMD4(
+            h,
+            a.y + (b.y - a.y) * t,
+            a.z + (b.z - a.z) * t,
+            a.w + (b.w - a.w) * t
         )
-
-        // Animated blob positions - 8 blobs for full coverage including corners
-        let blobs: [(baseX: Double, baseY: Double, freqX: Double, freqY: Double, phase: Double, colorIdx: Int, radius: Double)] = [
-            // Corner blobs - fixed positions with slight movement
-            (0.0, 0.0, 0.08, 0.10, 0.0, 0, 0.8),      // Top-left
-            (1.0, 0.0, 0.10, 0.08, 1.0, 1, 0.8),      // Top-right
-            (0.0, 1.0, 0.09, 0.11, 2.0, 2, 0.8),      // Bottom-left
-            (1.0, 1.0, 0.11, 0.09, 3.0, 3, 0.8),      // Bottom-right
-            // Center blobs - more movement
-            (0.5, 0.5, 0.12, 0.14, 1.5, 0, 1.0),      // Center
-            (0.3, 0.5, 0.14, 0.12, 2.5, 1, 0.7),      // Left-center
-            (0.7, 0.5, 0.13, 0.15, 0.5, 2, 0.7),      // Right-center
-            (0.5, 0.7, 0.15, 0.13, 3.5, 3, 0.7),      // Bottom-center
-        ]
-
-        for blob in blobs {
-            let x = blob.baseX + 0.15 * sin(time * blob.freqX + blob.phase)
-            let y = blob.baseY + 0.15 * cos(time * blob.freqY + blob.phase * 0.7)
-
-            let center = CGPoint(x: x * size.width, y: y * size.height)
-            let radius = max(size.width, size.height) * blob.radius
-
-            let color = cols[blob.colorIdx % cols.count]
-            let nextColor = cols[(blob.colorIdx + 1) % cols.count]
-
-            let gradient = Gradient(colors: [
-                color.opacity(0.9),
-                color.opacity(0.6),
-                nextColor.opacity(0.3),
-                nextColor.opacity(0.1)
-            ])
-
-            context.fill(
-                Path(ellipseIn: CGRect(
-                    x: center.x - radius,
-                    y: center.y - radius,
-                    width: radius * 2,
-                    height: radius * 2
-                )),
-                with: .radialGradient(
-                    gradient,
-                    center: center,
-                    startRadius: 0,
-                    endRadius: radius
-                )
-            )
-        }
     }
 
     private func resetColors() {
@@ -254,15 +233,18 @@ struct GradientScreensaverView: View {
         }
     }
 
-    // MARK: - SIMD Color Helpers (zero-allocation interpolation)
+    // MARK: - HSB Color Helpers
 
+    /// Convert a Color to HSBA components. `getHue` always returns 4 values, so
+    /// this is safe for greyscale colors (raw `cgColor.components` is not).
     private func colorToSIMD(_ color: Color) -> SIMD4<Double> {
-        let c = UIColor(color).cgColor.components ?? [0, 0, 0, 1]
-        return SIMD4<Double>(c[0], c[1], c[2], c.count > 3 ? c[3] : 1.0)
+        var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        UIColor(color).getHue(&h, saturation: &s, brightness: &b, alpha: &a)
+        return SIMD4<Double>(Double(h), Double(s), Double(b), Double(a))
     }
 
-    private func simdToColor(_ v: SIMD4<Double>) -> Color {
-        Color(red: v.x, green: v.y, blue: v.z)
+    private func hsbToColor(_ v: SIMD4<Double>) -> Color {
+        Color(hue: v.x, saturation: v.y, brightness: v.z, opacity: v.w)
     }
 }
 
@@ -315,18 +297,25 @@ struct GradientColorGenerator {
         }.shuffled()
     }
 
+    /// Jitter in HSB space: nudge hue and brightness while keeping saturation
+    /// high. This preserves each palette's neon character instead of
+    /// desaturating toward grey the way independent per-RGB-channel noise does.
     private static func adjustColor(_ color: Color) -> Color {
-        let components = UIColor(color).cgColor.components ?? [0, 0, 0, 1]
-        let variation = 0.12
-        return Color(
-            red: clamp(components[0] + Double.random(in: -variation...variation)),
-            green: clamp(components[1] + Double.random(in: -variation...variation)),
-            blue: clamp(components[2] + Double.random(in: -variation...variation))
-        )
+        var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        UIColor(color).getHue(&h, saturation: &s, brightness: &b, alpha: &a)
+
+        // ±0.03 of the hue circle ≈ ±11°
+        var hue = Double(h) + Double.random(in: -0.03...0.03)
+        if hue < 0 { hue += 1 } else if hue >= 1 { hue -= 1 }
+
+        let sat = clamp(Double(s) + Double.random(in: -0.08...0.08), min: 0.6, max: 1.0)
+        let bright = clamp(Double(b) + Double.random(in: -0.1...0.1), min: 0.35, max: 1.0)
+
+        return Color(hue: hue, saturation: sat, brightness: bright, opacity: Double(a))
     }
 
-    private static func clamp(_ value: Double) -> Double {
-        max(0, min(1, value))
+    private static func clamp(_ value: Double, min lower: Double, max upper: Double) -> Double {
+        Swift.max(lower, Swift.min(upper, value))
     }
 }
 
