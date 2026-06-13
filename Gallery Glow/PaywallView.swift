@@ -33,7 +33,7 @@ struct PaywallView: View {
             )
             .ignoresSafeArea()
 
-            VStack(alignment: .leading, spacing: 32) {
+            VStack(alignment: .leading, spacing: 24) {
                 VStack(alignment: .leading, spacing: 14) {
                     Text("Gallery Glow Lifetime")
                         .font(.largeTitle)
@@ -51,6 +51,8 @@ struct PaywallView: View {
                     Label("Restore anytime", systemImage: "arrow.clockwise")
                 }
                 .font(.callout)
+                .lineLimit(1)
+                .fixedSize()
                 .foregroundColor(.secondary)
 
                 VStack(alignment: .leading, spacing: 14) {
@@ -95,17 +97,21 @@ struct PaywallView: View {
                 }
                 .buttonStyle(.borderedProminent)
 
-                if let message = statusMessage ?? purchaseManager.statusMessage {
-                    Text(message)
-                        .font(.callout)
-                        .foregroundColor(.secondary)
-                }
+                // Always present so the sheet reserves space for the status
+                // line; the card does not grow once it is presented.
+                Text(statusMessage ?? purchaseManager.statusMessage ?? " ")
+                    .font(.callout)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
             .frame(maxWidth: 920, alignment: .leading)
-            .padding(64)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-            .padding(80)
+            .padding(.horizontal, 64)
+            .padding(.vertical, 44)
         }
+        // The tvOS sheet card sizes itself unreliably as async state changes
+        // the content height; pin the card so the padding stays symmetric.
+        .frame(width: 1100, height: 840)
         .task {
             await purchaseManager.prepareForStore()
         }
