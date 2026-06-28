@@ -27,6 +27,7 @@ final class PurchaseManager: ObservableObject {
     @Published var statusMessage: String?
 
     private let productIDs: Set<String>
+    private var productLoadTask: Task<[Product], Error>?
     private var transactionUpdatesTask: Task<Void, Never>?
 
     var lifetimeProduct: Product? {
@@ -53,6 +54,7 @@ final class PurchaseManager: ObservableObject {
     }
 
     deinit {
+        productLoadTask?.cancel()
         transactionUpdatesTask?.cancel()
     }
 
@@ -62,13 +64,28 @@ final class PurchaseManager: ObservableObject {
     }
 
     func loadProducts() async {
-        guard !isLoadingProducts else { return }
+        if let productLoadTask {
+            await applyLoadedProducts(from: productLoadTask)
+            return
+        }
 
         isLoadingProducts = true
-        defer { isLoadingProducts = false }
+        let productIDs = Array(productIDs)
+        let productLoadTask = Task {
+            try await Product.products(for: productIDs)
+        }
+        self.productLoadTask = productLoadTask
+        defer {
+            self.productLoadTask = nil
+            isLoadingProducts = false
+        }
 
+        await applyLoadedProducts(from: productLoadTask)
+    }
+
+    private func applyLoadedProducts(from productLoadTask: Task<[Product], Error>) async {
         do {
-            let storeProducts = try await Product.products(for: Array(productIDs))
+            let storeProducts = try await productLoadTask.value
             products = storeProducts.sorted { $0.displayName < $1.displayName }
 
             if lifetimeProduct == nil {
