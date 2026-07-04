@@ -24,7 +24,9 @@ struct ContentView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 60) {
-                    if !purchaseManager.isUnlocked {
+                    // Waits for the local entitlement check so owners never see
+                    // the banner flash on launch.
+                    if purchaseManager.shouldOfferPurchase {
                         PurchaseBanner(
                             price: purchaseManager.lifetimeDisplayPrice,
                             isLoading: purchaseManager.isLoadingProducts
@@ -32,6 +34,7 @@ struct ContentView: View {
                             showPaywall = true
                         }
                         .padding(.horizontal, 64)
+                        .transition(.opacity)
                     }
 
                     // Painting of the Day
@@ -53,6 +56,7 @@ struct ContentView: View {
                     }
                 }
                 .padding(.vertical, 48)
+                .animation(.easeInOut(duration: 0.25), value: purchaseManager.shouldOfferPurchase)
             }
             .navigationTitle("Gallery Glow")
             .fullScreenCover(item: $selectedPainting) { painting in

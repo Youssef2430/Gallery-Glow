@@ -301,7 +301,7 @@ struct PaintingImage: View {
     }
 
     private var displayName: String {
-        // Extract just the filename from path like "Van Gogh/self-portrait_1998.74.5"
+        // Extract just the filename from path like "Artist/catalog_name_1998.74.5"
         let filename = imageName.components(separatedBy: "/").last ?? imageName
         // Remove catalog numbers and clean up
         let cleaned = filename
