@@ -10,8 +10,8 @@ Uploaded framed promotional screenshots are in
 Uploaded set:
 
 1. `01-living-gallery.png` — home screen in Apple TV frame
-2. `02-masterpieces-edge-to-edge.png` — full-screen Van Gogh
-3. `03-iconic-works.png` — full-screen Hokusai
+2. `02-masterpieces-edge-to-edge.png` — full-screen Michelangelo
+3. `03-iconic-works.png` — full-screen Munch
 4. `04-classic-art-framed.png` — full-screen Botticelli
 5. `05-browse-by-artist.png` — artist browsing
 6. `06-directors-cut.png` — full-screen Hopper
@@ -41,23 +41,22 @@ folder `/docs` → Save. (Requires the `docs/` folder to be committed and pushed
 
 ## Promotional Text (170 chars max)
 
-> Turn your Apple TV into a living art gallery. Masterpieces from Van Gogh,
-> Monet, Hokusai and more — in stunning full screen, all day long.
+> Turn your Apple TV into a living art gallery. Wide-screen masterpieces from
+> Hopper, Botticelli, Munch and more — in stunning full screen, all day long.
 
 ## Description
 
 > Gallery Glow turns your Apple TV into a living art gallery.
 >
-> Fill your screen with timeless masterpieces — Van Gogh's Starry Night Over
-> the Rhône, Hokusai's Great Wave, Botticelli's Birth of Venus, Vermeer's View
-> of Delft, and many more — beautifully presented edge to edge on your TV.
+> Fill your screen with timeless masterpieces — Hopper's Nighthawks,
+> Botticelli's Birth of Venus, Munch's Linde Frieze, Michelangelo's Creation of
+> Adam, and more — beautifully presented edge to edge on your TV.
 >
 > FEATURES
 >
 > • Painting of the Day — a new masterpiece greets you every day
 > • Full-screen viewing — every brushstroke, edge to edge
-> • Browse by artist — Van Gogh, Monet, Vermeer, Rembrandt, Klimt, Munch,
->   Michelangelo, Raphael, Hopper, Botticelli, and Hokusai
+> • Browse by artist — Klimt, Munch, Michelangelo, Hopper, and Botticelli
 > • Director's Cut — a hand-picked selection of the collection's finest
 > • Ambient gradients — five soothing animated color scenes for when you
 >   want atmosphere without a frame

@@ -15,55 +15,19 @@ class PaintingData {
     let directorsCut: [Painting]
 
     private init() {
-        // Vincent van Gogh
-        let vanGoghPaintings = [
-            Painting(title: "Farmhouse in Provence", year: 1888, artistName: "Vincent van Gogh", imageName: "Van Gogh/farmhouse_in_provence_1970.17.34", description: "A vibrant depiction of rural life in southern France during van Gogh's time in Arles."),
-            Painting(title: "Flower Beds in Holland", year: 1883, artistName: "Vincent van Gogh", imageName: "Van Gogh/flower_beds_in_holland_1983.1.21", description: "An early work showing the colorful tulip fields of the Netherlands."),
-            Painting(title: "Roses", year: 1890, artistName: "Vincent van Gogh", imageName: "Van Gogh/roses_1991.67.1", description: "A lush still life painted during van Gogh's final months at Saint-Rémy."),
-            Painting(title: "Seascape at Port-en-Bessin", year: 1888, artistName: "Vincent van Gogh", imageName: "Van Gogh/seascape_at_port-en-bessin_normandy_1972.9.21", description: "A coastal scene capturing the movement of the sea and sky."),
-            Painting(title: "Still Life of Oranges and Lemons with Blue Gloves", year: 1889, artistName: "Vincent van Gogh", imageName: "Van Gogh/still_life_of_oranges_and_lemons_with_blue_gloves_2014.18.13", description: "A colorful still life showcasing van Gogh's mastery of complementary colors."),
-            Painting(title: "The Zandmennik House", year: 1879, artistName: "Vincent van Gogh", imageName: "Van Gogh/the_zandmennik_house_1991.217.66", description: "An early drawing from van Gogh's time in the Borinage mining region."),
-            Painting(title: "Starry Night Over the Rhône", year: 1888, artistName: "Vincent van Gogh", imageName: "Van Gogh/Starry_Night_Over_the_Rhone", description: "A luminous night scene painted along the banks of the Rhône River in Arles, capturing the reflections of gas lights on the water.", forceFullScreen: true)
-        ]
-
-        // Claude Monet
-        let monetPaintings = [
-            Painting(title: "The Japanese Footbridge", year: 1899, artistName: "Claude Monet", imageName: "Monet/the_japanese_footbridge_1992.9.1", description: "The iconic green footbridge over Monet's water lily pond at Giverny."),
-            Painting(title: "The Artist's Garden in Argenteuil", year: 1873, artistName: "Claude Monet", imageName: "Monet/the_artist_s_garden_in_argenteuil_a_corner_of_the_garden_with_dahlias_1991.27.1", description: "A corner of Monet's garden with dahlias in full bloom."),
-            Painting(title: "The Bridge at Argenteuil", year: 1874, artistName: "Claude Monet", imageName: "Monet/the_bridge_at_argenteuil_1983.1.24", description: "A sunlit view of the bridge at Argenteuil with sailboats on the Seine.", forceFullScreen: true),
-            Painting(title: "Waterloo Bridge, London at Sunset", year: 1904, artistName: "Claude Monet", imageName: "Monet/waterloo_bridge_london_at_sunset_1983.1.28", description: "Part of Monet's London series, capturing the atmospheric effects of fog and light.")
-        ]
-
-        // Johannes Vermeer
-        let vermeerPaintings = [
-            Painting(title: "View of Delft", year: 1661, artistName: "Johannes Vermeer", imageName: "Vermeer/View_of_Delft", description: "A cityscape of Vermeer's hometown, celebrated for its luminous atmosphere.")
-        ]
-
-        // Rembrandt van Rijn
-        let rembrandtPaintings = [
-            Painting(title: "The Mill", year: 1645, artistName: "Rembrandt van Rijn", imageName: "Van Rijn/the_mill_1942.9.62", description: "A dramatic landscape featuring a windmill silhouetted against a stormy sky."),
-            Painting(title: "Philemon and Baucis", year: 1658, artistName: "Rembrandt van Rijn", imageName: "Van Rijn/philemon_and_baucis_1942.9.65", description: "A mythological scene depicting the hospitable elderly couple visited by the gods."),
-            Painting(title: "The Circumcision", year: 1661, artistName: "Rembrandt van Rijn", imageName: "Van Rijn/the_circumcision_1942.9.60", description: "A religious scene rendered with Rembrandt's characteristic use of light and shadow.")
-        ]
-
         // Gustav Klimt
         let klimtPaintings = [
-            Painting(title: "Curled Up Girl on Bed", year: 1917, artistName: "Gustav Klimt", imageName: "Klimt/curled_up_girl_on_bed_1974.83.1", description: "An intimate drawing showing Klimt's mastery of the human form.")
+            Painting(title: "Curled Up Girl on Bed", year: 1917, artistName: "Gustav Klimt", imageName: "Klimt/curled_up_girl_on_bed_1974.83.1", description: "An intimate drawing showing Klimt's mastery of the human form.", forceFullScreen: true)
         ]
 
         // Edvard Munch
         let munchPaintings = [
-            Painting(title: "Linde Frieze", year: 1904, artistName: "Edvard Munch", imageName: "Munch/Linde_Frieze", description: "Part of a decorative frieze commissioned for Dr. Max Linde's home.")
+            Painting(title: "Linde Frieze", year: 1904, artistName: "Edvard Munch", imageName: "Munch/Linde_Frieze", description: "Part of a decorative frieze commissioned for Dr. Max Linde's home.", forceFullScreen: true)
         ]
 
         // Michelangelo
         let michelangeloPaintings = [
-            Painting(title: "The Creation of Adam", year: 1512, artistName: "Michelangelo", imageName: "Michelangelo/Creación_de_Adán", description: "The iconic Sistine Chapel fresco depicting God giving life to the first man.")
-        ]
-
-        // Raphael
-        let raphaelPaintings = [
-            Painting(title: "The School of Athens", year: 1511, artistName: "Raphael", imageName: "Raphael/School_of_Athens", description: "A masterpiece of Renaissance art depicting the greatest philosophers of antiquity gathered in a grand architectural setting.", forceFullScreen: true)
+            Painting(title: "The Creation of Adam", year: 1512, artistName: "Michelangelo", imageName: "Michelangelo/Creation_of_Adam", description: "The iconic Sistine Chapel fresco depicting God giving life to the first man.", forceFullScreen: true)
         ]
 
         // Edward Hopper
@@ -76,24 +40,13 @@ class PaintingData {
             Painting(title: "The Birth of Venus", year: 1485, artistName: "Sandro Botticelli", imageName: "Botticelli/Birth_of_Venus", description: "A mythological masterpiece depicting the goddess Venus emerging from the sea as a fully grown woman.", forceFullScreen: true)
         ]
 
-        // Katsushika Hokusai
-        let hokusaiPaintings = [
-            Painting(title: "The Great Wave off Kanagawa", year: 1831, artistName: "Katsushika Hokusai", imageName: "Hokusai/Great_Wave", description: "The most famous work from Hokusai's series 'Thirty-six Views of Mount Fuji', depicting a massive wave threatening boats near Kanagawa.", forceFullScreen: true)
-        ]
-
         // Create artists
         artists = [
-            Artist(name: "Vincent van Gogh", birthYear: 1853, deathYear: 1890, nationality: "Dutch", paintings: vanGoghPaintings),
-            Artist(name: "Claude Monet", birthYear: 1840, deathYear: 1926, nationality: "French", paintings: monetPaintings),
-            Artist(name: "Johannes Vermeer", birthYear: 1632, deathYear: 1675, nationality: "Dutch", paintings: vermeerPaintings),
-            Artist(name: "Rembrandt van Rijn", birthYear: 1606, deathYear: 1669, nationality: "Dutch", paintings: rembrandtPaintings),
             Artist(name: "Gustav Klimt", birthYear: 1862, deathYear: 1918, nationality: "Austrian", paintings: klimtPaintings),
             Artist(name: "Edvard Munch", birthYear: 1863, deathYear: 1944, nationality: "Norwegian", paintings: munchPaintings),
             Artist(name: "Michelangelo", birthYear: 1475, deathYear: 1564, nationality: "Italian", paintings: michelangeloPaintings),
-            Artist(name: "Raphael", birthYear: 1483, deathYear: 1520, nationality: "Italian", paintings: raphaelPaintings),
             Artist(name: "Edward Hopper", birthYear: 1882, deathYear: 1967, nationality: "American", paintings: hopperPaintings),
-            Artist(name: "Sandro Botticelli", birthYear: 1445, deathYear: 1510, nationality: "Italian", paintings: botticelliPaintings),
-            Artist(name: "Katsushika Hokusai", birthYear: 1760, deathYear: 1849, nationality: "Japanese", paintings: hokusaiPaintings)
+            Artist(name: "Sandro Botticelli", birthYear: 1445, deathYear: 1510, nationality: "Italian", paintings: botticelliPaintings)
         ]
 
         // Flatten all paintings for easy access

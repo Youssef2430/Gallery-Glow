@@ -26,11 +26,11 @@ struct AppStoreScreenshotTests {
 
         var screens: [(String, AnyView)] = []
 
-        if let p = painting("Van Gogh/Starry_Night_Over_the_Rhone") {
-            screens.append(("02-starry-night", AnyView(ScreensaverView(painting: p))))
+        if let p = painting("Michelangelo/Creation_of_Adam") {
+            screens.append(("02-creation-of-adam", AnyView(ScreensaverView(painting: p))))
         }
-        if let p = painting("Hokusai/Great_Wave") {
-            screens.append(("03-great-wave", AnyView(ScreensaverView(painting: p))))
+        if let p = painting("Munch/Linde_Frieze") {
+            screens.append(("03-linde-frieze", AnyView(ScreensaverView(painting: p))))
         }
         if let p = painting("Botticelli/Birth_of_Venus") {
             screens.append(("04-birth-of-venus", AnyView(ScreensaverView(painting: p))))
@@ -38,9 +38,9 @@ struct AppStoreScreenshotTests {
         if let p = painting("Hopper/Nighthawks") {
             screens.append(("05-nighthawks", AnyView(ScreensaverView(painting: p))))
         }
-        if let monet = data.artists.first(where: { $0.name.contains("Monet") }) {
-            screens.append(("06-artist-monet", AnyView(
-                NavigationStack { ArtistView(artist: monet) }
+        if let klimt = data.artists.first(where: { $0.name.contains("Klimt") }) {
+            screens.append(("06-artist-klimt", AnyView(
+                NavigationStack { ArtistView(artist: klimt) }
                     .environmentObject(PurchaseManager(startsTransactionListener: false))
             )))
         }

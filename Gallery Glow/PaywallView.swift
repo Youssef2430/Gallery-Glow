@@ -13,11 +13,22 @@ struct PaywallView: View {
 
     let onUnlocked: () -> Void
 
+    private enum FocusTarget: Hashable {
+        case purchase
+        case restore
+        case later
+    }
+
     @State private var isPurchasing = false
     @State private var statusMessage: String?
+    @FocusState private var focusedButton: FocusTarget?
 
     init(onUnlocked: @escaping () -> Void = {}) {
         self.onUnlocked = onUnlocked
+    }
+
+    private var isBusy: Bool {
+        isPurchasing || purchaseManager.isRestoring
     }
 
     var body: some View {
@@ -66,6 +77,7 @@ struct PaywallView: View {
                                         .fontWeight(.semibold)
                                         .lineLimit(1)
                                         .minimumScaleFactor(0.78)
+                                        .contentTransition(.opacity)
 
                                     Spacer(minLength: 12)
 
@@ -73,7 +85,8 @@ struct PaywallView: View {
                                 }
                                 .frame(maxWidth: .infinity)
                             }
-                            .disabled(isPurchasing || purchaseManager.isRestoring)
+                            .disabled(isBusy)
+                            .focused($focusedButton, equals: .purchase)
                             .accessibilityIdentifier("unlockLifetimeButton")
 
                             Button(action: restore) {
@@ -89,23 +102,25 @@ struct PaywallView: View {
                                 }
                                 .frame(maxWidth: .infinity)
                             }
-                            .disabled(isPurchasing || purchaseManager.isRestoring)
+                            .disabled(isBusy)
+                            .focused($focusedButton, equals: .restore)
 
                             Button("Maybe Later") {
                                 dismiss()
                             }
-                            .disabled(isPurchasing || purchaseManager.isRestoring)
+                            .disabled(isBusy)
+                            .focused($focusedButton, equals: .later)
                         }
                         .buttonStyle(.borderedProminent)
 
-                        // Always present so the sheet reserves space for the status
-                        // line; the card does not grow once it is presented.
-                        Text(statusMessage ?? purchaseManager.statusMessage ?? " ")
+                        // Reserves two lines so the card never resizes when a
+                        // status message appears or grows.
+                        Text(statusMessage ?? purchaseManager.statusMessage ?? "")
                             .font(.callout)
                             .foregroundColor(.secondary)
-                            .lineLimit(isCompact ? 2 : 1)
-                            .fixedSize(horizontal: false, vertical: true)
+                            .lineLimit(2, reservesSpace: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            .accessibilityIdentifier("paywallStatusLabel")
                     }
                     .frame(maxWidth: 920, alignment: .leading)
                     .padding(.horizontal, horizontalPadding)
@@ -113,10 +128,13 @@ struct PaywallView: View {
                     .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
+            .animation(.easeInOut(duration: 0.2), value: isPurchasing)
+            .animation(.easeInOut(duration: 0.2), value: purchaseManager.isLoadingProducts)
         }
         // Keep the tvOS card stable, while still allowing compact touch
         // presentations to fit and scroll instead of clipping the CTA.
         .frame(minWidth: 320, idealWidth: 1100, maxWidth: 1100, minHeight: 480, idealHeight: 840, maxHeight: 840)
+        .defaultFocus($focusedButton, .purchase)
         .task {
             await purchaseManager.prepareForStore()
         }
@@ -124,10 +142,14 @@ struct PaywallView: View {
 
     private var primaryButtonTitle: String {
         if isPurchasing {
-            return "Starting Lifetime Unlock"
+            return "Unlocking…"
         }
 
-        return "Unlock Lifetime - \(purchaseManager.lifetimeDisplayPrice)"
+        if let price = purchaseManager.lifetimeDisplayPrice {
+            return "Unlock Lifetime – \(price)"
+        }
+
+        return purchaseManager.isLoadingProducts ? "Loading Price…" : "Unlock Lifetime"
     }
 
     @ViewBuilder
@@ -135,7 +157,7 @@ struct PaywallView: View {
         if isCompact {
             VStack(alignment: .leading, spacing: 10) {
                 benefitLabel("One-time purchase", systemImage: "checkmark.seal.fill")
-                benefitLabel("Family Sharing ready", systemImage: "person.2.fill")
+                benefitLabel("Family Sharing", systemImage: "person.2.fill")
                 benefitLabel("Restore anytime", systemImage: "arrow.clockwise")
             }
             .font(.callout)
@@ -143,7 +165,7 @@ struct PaywallView: View {
         } else {
             HStack(spacing: 18) {
                 benefitLabel("One-time purchase", systemImage: "checkmark.seal.fill")
-                benefitLabel("Family Sharing ready", systemImage: "person.2.fill")
+                benefitLabel("Family Sharing", systemImage: "person.2.fill")
                 benefitLabel("Restore anytime", systemImage: "arrow.clockwise")
             }
             .font(.callout)
@@ -165,21 +187,18 @@ struct PaywallView: View {
 
         Task {
             let outcome = await purchaseManager.purchaseLifetime()
+            isPurchasing = false
 
-            await MainActor.run {
-                isPurchasing = false
-
-                switch outcome {
-                case .success, .restored:
-                    onUnlocked()
-                    dismiss()
-                case .pending:
-                    statusMessage = "Purchase is pending approval."
-                case .cancelled:
-                    statusMessage = nil
-                case .failed(let message):
-                    statusMessage = message
-                }
+            switch outcome {
+            case .success, .restored:
+                onUnlocked()
+                dismiss()
+            case .pending:
+                statusMessage = "Purchase is awaiting approval. Everything unlocks automatically once it's approved."
+            case .cancelled:
+                statusMessage = nil
+            case .failed(let message):
+                statusMessage = message
             }
         }
     }
@@ -190,25 +209,23 @@ struct PaywallView: View {
         Task {
             let outcome = await purchaseManager.restorePurchases()
 
-            await MainActor.run {
-                switch outcome {
-                case .success, .restored:
-                    onUnlocked()
-                    dismiss()
-                case .pending:
-                    statusMessage = "Restore is already in progress."
-                case .cancelled:
-                    statusMessage = nil
-                case .failed(let message):
-                    statusMessage = message
-                }
+            switch outcome {
+            case .success, .restored:
+                onUnlocked()
+                dismiss()
+            case .pending:
+                statusMessage = "Restore is already in progress."
+            case .cancelled:
+                statusMessage = nil
+            case .failed(let message):
+                statusMessage = message
             }
         }
     }
 }
 
 struct PurchaseBanner: View {
-    let price: String
+    let price: String?
     let isLoading: Bool
     let action: () -> Void
 
@@ -230,9 +247,13 @@ struct PurchaseBanner: View {
 
                 Spacer()
 
-                Text(isLoading ? "Loading" : price)
-                    .font(.headline)
-                    .monospacedDigit()
+                if isLoading {
+                    ProgressView()
+                } else if let price {
+                    Text(price)
+                        .font(.headline)
+                        .monospacedDigit()
+                }
 
                 Image(systemName: "chevron.right")
                     .foregroundColor(.secondary)
