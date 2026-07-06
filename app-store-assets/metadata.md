@@ -42,21 +42,22 @@ folder `/docs` → Save. (Requires the `docs/` folder to be committed and pushed
 ## Promotional Text (170 chars max)
 
 > Turn your Apple TV into a living art gallery. Wide-screen masterpieces from
-> Hopper, Botticelli, Munch and more — in stunning full screen, all day long.
+> Hopper, Monet, Botticelli and more — in stunning full screen, all day long.
 
 ## Description
 
 > Gallery Glow turns your Apple TV into a living art gallery.
 >
 > Fill your screen with timeless masterpieces — Hopper's Nighthawks,
-> Botticelli's Birth of Venus, Munch's Linde Frieze, Michelangelo's Creation of
-> Adam, and more — beautifully presented edge to edge on your TV.
+> Monet's Stacks of Wheat, Church's Heart of the Andes, Michelangelo's Creation
+> of Adam, and more — beautifully presented edge to edge on your TV.
 >
 > FEATURES
 >
 > • Painting of the Day — a new masterpiece greets you every day
 > • Full-screen viewing — every brushstroke, edge to edge
-> • Browse by artist — Klimt, Munch, Michelangelo, Hopper, and Botticelli
+> • Browse by artist — Klimt, Munch, Michelangelo, Hopper, Botticelli, Monet,
+>   Church, Leutze, and Post
 > • Director's Cut — a hand-picked selection of the collection's finest
 > • Ambient gradients — five soothing animated color scenes for when you
 >   want atmosphere without a frame
