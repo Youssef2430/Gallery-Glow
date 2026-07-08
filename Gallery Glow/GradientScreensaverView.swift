@@ -69,7 +69,7 @@ struct GradientScreensaverView: View {
     // Transition timing is driven outside the render loop so the mesh stays pure.
     @State private var transitionStartDate: Date?
     private let transitionDuration: Double = 8.0
-    private let colorChangeInterval: Double = 60.0
+    private let colorChangeInterval: Double = 20.0
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0/30.0)) { timeline in
@@ -83,6 +83,7 @@ struct GradientScreensaverView: View {
                 colors: meshColors(from: base),
                 smoothsColors: true
             )
+            .hueRotation(.degrees(6 * sin(time * 0.15)))
             .ignoresSafeArea()
         }
         .background(Color.black)
@@ -105,25 +106,36 @@ struct GradientScreensaverView: View {
 
     // MARK: - Mesh geometry
 
-    /// 4×4 control-point grid. Edge points stay pinned to their edges so the
-    /// gradient always covers the screen; the four interior points drift on
-    /// independent sine/cosine paths for an organic, fluid motion.
+    /// 4×4 control-point grid. Corners stay pinned so the gradient always
+    /// covers the screen. Edge points slide along their edge and the four
+    /// interior points wander on layered sine/cosine paths, so the whole
+    /// mesh visibly breathes instead of only the center drifting.
     private func meshPoints(time: Double) -> [SIMD2<Float>] {
         func p(_ x: Double, _ y: Double) -> SIMD2<Float> {
             SIMD2(Float(x), Float(y))
         }
-        let amp = 0.07 // small enough that interior points never cross or reach an edge
-        func drift(_ baseX: Double, _ baseY: Double, _ fx: Double, _ fy: Double, _ phase: Double) -> SIMD2<Float> {
-            p(baseX + amp * sin(time * fx + phase),
-              baseY + amp * cos(time * fy + phase))
-        }
         let t1 = 1.0 / 3.0
         let t2 = 2.0 / 3.0
+
+        // Interior points: two stacked sines per axis for organic, non-circular
+        // paths. Total deviation stays ≤ 0.15 so neighboring points can never
+        // cross (2 × 0.15 < 1/3) and never reach an edge.
+        let amp = 0.10
+        func drift(_ baseX: Double, _ baseY: Double, _ fx: Double, _ fy: Double, _ phase: Double) -> SIMD2<Float> {
+            p(baseX + amp * sin(time * fx + phase) + amp * 0.5 * sin(time * fy * 1.7 + phase * 2),
+              baseY + amp * cos(time * fy + phase) + amp * 0.5 * cos(time * fx * 1.3 + phase * 3))
+        }
+
+        // Edge points slide along their edge (±0.1 keeps their ordering).
+        func slide(_ base: Double, _ f: Double, _ phase: Double) -> Double {
+            base + 0.1 * sin(time * f + phase)
+        }
+
         return [
-            p(0, 0),  p(t1, 0),                         p(t2, 0),                         p(1, 0),
-            p(0, t1), drift(t1, t1, 0.12, 0.10, 0.0),   drift(t2, t1, 0.10, 0.13, 1.0),   p(1, t1),
-            p(0, t2), drift(t1, t2, 0.11, 0.12, 2.0),   drift(t2, t2, 0.13, 0.09, 3.0),   p(1, t2),
-            p(0, 1),  p(t1, 1),                         p(t2, 1),                         p(1, 1),
+            p(0, 0),                            p(slide(t1, 0.31, 0.5), 0),         p(slide(t2, 0.27, 2.1), 0),         p(1, 0),
+            p(0, slide(t1, 0.24, 1.2)),         drift(t1, t1, 0.42, 0.35, 0.0),     drift(t2, t1, 0.35, 0.46, 1.0),     p(1, slide(t1, 0.29, 4.0)),
+            p(0, slide(t2, 0.33, 2.8)),         drift(t1, t2, 0.38, 0.41, 2.0),     drift(t2, t2, 0.45, 0.32, 3.0),     p(1, slide(t2, 0.26, 5.3)),
+            p(0, 1),                            p(slide(t1, 0.28, 3.6), 1),         p(slide(t2, 0.34, 1.7), 1),         p(1, 1),
         ]
     }
 
