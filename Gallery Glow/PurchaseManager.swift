@@ -9,6 +9,7 @@ import Combine
 import Foundation
 import OSLog
 import StoreKit
+import UIKit
 
 @MainActor
 final class PurchaseManager: ObservableObject {
@@ -95,7 +96,25 @@ final class PurchaseManager: ObservableObject {
         isLoadingProducts = true
         let productIDs = Array(productIDs)
         let productLoadTask = Task {
-            try await Product.products(for: productIDs)
+            // The sandbox/review environment intermittently fails product
+            // fetches; retry before surfacing an error to the user.
+            var lastError: Error = StoreKitError.unknown
+            for attempt in 0..<3 {
+                if attempt > 0 {
+                    try await Task.sleep(for: .seconds(Double(attempt)))
+                }
+
+                do {
+                    let products = try await Product.products(for: productIDs)
+                    if !products.isEmpty { return products }
+                    lastError = StoreKitError.unknown
+                } catch is CancellationError {
+                    throw CancellationError()
+                } catch {
+                    lastError = error
+                }
+            }
+            throw lastError
         }
         self.productLoadTask = productLoadTask
         defer {
@@ -138,7 +157,15 @@ final class PurchaseManager: ObservableObject {
         }
 
         do {
-            let result = try await product.purchase()
+            // Always hand StoreKit an explicit scene: the sceneless purchase()
+            // is deprecated on tvOS 18.2+ and fails when it can't infer where
+            // to present the confirmation (e.g. over a sheet).
+            let result: Product.PurchaseResult
+            if let scene = activeWindowScene {
+                result = try await product.purchase(confirmIn: scene)
+            } else {
+                result = try await product.purchase()
+            }
 
             switch result {
             case .success(.verified(let transaction)):
@@ -261,6 +288,11 @@ final class PurchaseManager: ObservableObject {
             // Leave it unfinished; StoreKit retries delivery after it verifies.
             logger.error("Ignoring unverified transaction update: \(error, privacy: .public)")
         }
+    }
+
+    private var activeWindowScene: UIWindowScene? {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        return scenes.first { $0.activationState == .foregroundActive } ?? scenes.first
     }
 
     private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
