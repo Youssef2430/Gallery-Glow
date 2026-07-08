@@ -32,21 +32,6 @@ final class Gallery_GlowUITests: XCTestCase {
     }
 
     @MainActor
-    func testLifetimeUnlockButtonIsSelectable() throws {
-        let app = XCUIApplication()
-        app.launch()
-
-        let purchaseBanner = app.buttons["purchaseBannerButton"]
-        XCTAssertTrue(purchaseBanner.waitForExistence(timeout: 10))
-        XCUIRemote.shared.press(.select)
-
-        let unlockButton = app.buttons["unlockLifetimeButton"]
-        XCTAssertTrue(unlockButton.waitForExistence(timeout: 10))
-        XCTAssertTrue(unlockButton.isEnabled)
-        XCTAssertTrue(unlockButton.isHittable)
-    }
-
-    @MainActor
     func testLaunchPerformance() throws {
         // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {

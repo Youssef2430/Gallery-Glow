@@ -4,7 +4,7 @@
 //
 //  Renders key screens to 1920x1080 PNGs for the App Store listing.
 //  Hosted unit tests run inside the app process, so views can be
-//  presented in the real window and snapshotted without StoreKit.
+//  presented in the real window and snapshotted.
 //  Output: /tmp/gg-shots/*.png
 //
 
@@ -41,7 +41,6 @@ struct AppStoreScreenshotTests {
         if let klimt = data.artists.first(where: { $0.name.contains("Klimt") }) {
             screens.append(("06-artist-klimt", AnyView(
                 NavigationStack { ArtistView(artist: klimt) }
-                    .environmentObject(PurchaseManager(startsTransactionListener: false))
             )))
         }
         screens.append(("07-gradient-aurora", AnyView(GradientScreensaverView(palette: .aurora))))
