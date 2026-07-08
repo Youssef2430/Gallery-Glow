@@ -9,13 +9,9 @@ import SwiftUI
 
 struct ContentView: View {
     private let data = PaintingData.shared
-    @EnvironmentObject private var purchaseManager: PurchaseManager
 
     @State private var selectedPainting: Painting?
     @State private var selectedGradient: GradientPalette?
-    @State private var pendingPainting: Painting?
-    @State private var pendingGradient: GradientPalette?
-    @State private var showPaywall = false
 
     // Cache painting of the day — deterministic per day, no need to recompute on every body evaluation
     @State private var paintingOfTheDay: Painting = PaintingData.shared.paintingOfTheDay()
@@ -24,27 +20,14 @@ struct ContentView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 60) {
-                    // Waits for the local entitlement check so owners never see
-                    // the banner flash on launch.
-                    if purchaseManager.shouldOfferPurchase {
-                        PurchaseBanner(
-                            price: purchaseManager.lifetimeDisplayPrice,
-                            isLoading: purchaseManager.isLoadingProducts
-                        ) {
-                            showPaywall = true
-                        }
-                        .padding(.horizontal, 64)
-                        .transition(.opacity)
-                    }
-
                     // Painting of the Day
                     PaintingOfTheDaySection(painting: paintingOfTheDay) { painting in
-                        requestPainting(painting)
+                        presentPainting(painting)
                     }
 
                     // Director's Cut Section
                     DirectorsCutSection(paintings: data.directorsCut) { painting in
-                        requestPainting(painting)
+                        presentPainting(painting)
                     }
 
                     // Artists Section
@@ -52,11 +35,10 @@ struct ContentView: View {
 
                     // Gradients Section
                     GradientsSection { palette in
-                        requestGradient(palette)
+                        presentGradient(palette)
                     }
                 }
                 .padding(.vertical, 48)
-                .animation(.easeInOut(duration: 0.25), value: purchaseManager.shouldOfferPurchase)
             }
             .navigationTitle("Gallery Glow")
             .fullScreenCover(item: $selectedPainting) { painting in
@@ -65,53 +47,7 @@ struct ContentView: View {
             .fullScreenCover(item: $selectedGradient) { palette in
                 GradientScreensaverView(palette: palette)
             }
-            .sheet(isPresented: $showPaywall) {
-                PaywallView {
-                    presentPendingSelectionIfUnlocked()
-                }
-                .environmentObject(purchaseManager)
-            }
-            .onChange(of: purchaseManager.isUnlocked) { _, unlocked in
-                guard unlocked else { return }
-                presentPendingSelectionIfUnlocked()
-            }
         }
-    }
-
-    private func requestPainting(_ painting: Painting) {
-        guard purchaseManager.isUnlocked else {
-            pendingPainting = painting
-            pendingGradient = nil
-            showPaywall = true
-            return
-        }
-
-        presentPainting(painting)
-    }
-
-    private func requestGradient(_ palette: GradientPalette) {
-        guard purchaseManager.isUnlocked else {
-            pendingPainting = nil
-            pendingGradient = palette
-            showPaywall = true
-            return
-        }
-
-        presentGradient(palette)
-    }
-
-    private func presentPendingSelectionIfUnlocked() {
-        guard purchaseManager.isUnlocked else { return }
-
-        if let painting = pendingPainting {
-            pendingPainting = nil
-            presentPainting(painting)
-        } else if let palette = pendingGradient {
-            pendingGradient = nil
-            presentGradient(palette)
-        }
-
-        showPaywall = false
     }
 
     private func presentPainting(_ painting: Painting) {
@@ -403,5 +339,4 @@ struct GradientCard: View {
 
 #Preview {
     ContentView()
-        .environmentObject(PurchaseManager(startsTransactionListener: false))
 }
