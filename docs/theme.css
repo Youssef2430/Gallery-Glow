@@ -1,21 +1,28 @@
 .theme-picker { position: relative; z-index: 5; }
 .theme-picker summary {
+  position: relative;
   display: grid;
   place-items: center;
   width: 44px;
   height: 44px;
   color: var(--ink);
-  background: var(--paper);
-  border: 1px solid var(--rule);
-  border-radius: 50%;
+  background: transparent;
+  border: 0;
   cursor: pointer;
   list-style: none;
   -webkit-tap-highlight-color: transparent;
   view-transition-name: theme-control;
 }
 .theme-picker summary::-webkit-details-marker { display: none; }
-.theme-picker summary:hover, .theme-picker[open] summary { background: var(--surface); }
-.theme-picker summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+.theme-picker summary:focus-visible { outline: none; }
+.theme-picker summary:focus-visible::after {
+  content: "";
+  position: absolute;
+  bottom: 3px;
+  width: 16px;
+  height: 2px;
+  background: currentColor;
+}
 .theme-icon { width: 22px; height: 22px; overflow: visible; }
 .sun-disc { r: 5px; transition: r .55s cubic-bezier(.4, 0, .2, 1); }
 .moon-cutout { transform: translate(0, 0); transition: transform .55s cubic-bezier(.4, 0, .2, 1); }
@@ -51,10 +58,12 @@
 ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
 ::view-transition-old(root) { z-index: 1; }
 ::view-transition-new(root) { z-index: 2; }
-::view-transition-group(theme-control) { z-index: 4; }
+::view-transition-group(theme-control) { z-index: 4; mix-blend-mode: difference; }
 ::view-transition-group(theme-ripple) { z-index: 3; }
 ::view-transition-old(theme-control), ::view-transition-old(theme-ripple) { display: none; }
 ::view-transition-new(theme-control), ::view-transition-new(theme-ripple) { animation: none; mix-blend-mode: normal; }
+/* White difference blending keeps the bare icon visible on either side of the ripple. */
+::view-transition-new(theme-control) { filter: brightness(0) invert(1); }
 ::view-transition { pointer-events: none; }
 .theme-ripple { position: fixed; inset: 0; z-index: 10; overflow: hidden; pointer-events: none; view-transition-name: theme-ripple; }
 .theme-wave, .theme-drop { position: absolute; left: var(--ripple-x); top: var(--ripple-y); display: block; border-radius: 50%; opacity: 0; }
