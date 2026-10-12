@@ -7,12 +7,13 @@
 
 import Foundation
 import TVServices
+import Observation
 
 /// Represents a recently used item (either a painting or gradient).
 /// This file is compiled into both the app and the Gallery Shelf extension targets,
 /// so both sides always share the same JSON schema.
-struct RecentlyUsedItem: Codable, Equatable {
-    enum ItemType: String, Codable {
+nonisolated struct RecentlyUsedItem: Codable, Equatable, Sendable {
+    enum ItemType: String, Codable, Sendable {
         case painting
         case gradient
     }
@@ -29,11 +30,9 @@ struct RecentlyUsedItem: Codable, Equatable {
 }
 
 /// Manages recently used paintings and gradients with persistence via App Groups
-class RecentlyUsedManager {
+@MainActor @Observable
+final class RecentlyUsedManager {
     static let shared = RecentlyUsedManager()
-
-    /// App Group identifier for sharing data with Top Shelf extension
-    private let appGroupIdentifier = "group.com.galleryglow.shared"
 
     /// Key for storing recently used items
     private let recentlyUsedKey = "recentlyUsedItems"
@@ -42,10 +41,23 @@ class RecentlyUsedManager {
     private let maxRecentItems = 10
 
     /// Cached UserDefaults instance for the App Group (initialized once)
-    private let sharedDefaults: UserDefaults?
+    @ObservationIgnored private let sharedDefaults: UserDefaults?
+    @ObservationIgnored private let notify: () -> Void
+    private(set) var items: [RecentlyUsedItem]
 
-    private init() {
-        sharedDefaults = UserDefaults(suiteName: appGroupIdentifier)
+    init(defaults: UserDefaults? = UserDefaults(suiteName: "group.com.galleryglow.shared"),
+         notify: @escaping () -> Void = { TVTopShelfContentProvider.topShelfContentDidChange() }) {
+        sharedDefaults = defaults
+        self.notify = notify
+        if let data = defaults?.data(forKey: "recentlyUsedItems"),
+           let saved = try? JSONDecoder().decode([RecentlyUsedItem].self, from: data) {
+            var seen = Set<String>()
+            items = Array(saved.sorted { $0.timestamp > $1.timestamp }.filter {
+                seen.insert("\($0.type.rawValue)/\($0.identifier)").inserted
+            }.prefix(10))
+        } else {
+            items = []
+        }
     }
 
     // MARK: - Public API
@@ -76,11 +88,10 @@ class RecentlyUsedManager {
 
     /// Get all recently used items, sorted by most recent first
     func getRecentItems() -> [RecentlyUsedItem] {
+        // The extension can stay alive while the app writes a new snapshot.
         guard let data = sharedDefaults?.data(forKey: recentlyUsedKey),
-              let items = try? JSONDecoder().decode([RecentlyUsedItem].self, from: data) else {
-            return []
-        }
-        return items.sorted { $0.timestamp > $1.timestamp }
+              let saved = try? JSONDecoder().decode([RecentlyUsedItem].self, from: data) else { return [] }
+        return Array(saved.sorted { $0.timestamp > $1.timestamp }.prefix(maxRecentItems))
     }
 
     /// Get recently used paintings only
@@ -95,6 +106,8 @@ class RecentlyUsedManager {
 
     /// Clear all recently used items
     func clearAll() {
+        guard !items.isEmpty else { return }
+        items = []
         sharedDefaults?.removeObject(forKey: recentlyUsedKey)
         notifyTopShelfUpdate()
     }
@@ -102,7 +115,7 @@ class RecentlyUsedManager {
     // MARK: - Private Helpers
 
     private func addItem(_ item: RecentlyUsedItem) {
-        var items = getRecentItems()
+        var items = self.items
 
         // Remove existing item with same identifier and type (to update timestamp)
         items.removeAll { $0 == item }
@@ -115,7 +128,8 @@ class RecentlyUsedManager {
             items = Array(items.prefix(maxRecentItems))
         }
 
-        // Save
+        // Publish immediately so the gallery reflects the selection on return.
+        self.items = items
         saveItems(items)
 
         // Notify Top Shelf to update
@@ -128,6 +142,6 @@ class RecentlyUsedManager {
     }
 
     private func notifyTopShelfUpdate() {
-        TVTopShelfContentProvider.topShelfContentDidChange()
+        notify()
     }
 }

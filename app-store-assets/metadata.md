@@ -1,8 +1,10 @@
-# Gallery Glow — App Store Connect 1.0 Metadata
+# Gallery Glow — App Store Connect metadata draft
 
-Everything below is ready to paste into the version page.
+Draft for the redesigned lifetime-purchase build. Not submitted or uploaded.
 
-## Screenshots
+On October 11, 2026, **Gallery Glow Lifetime** was created in App Store Connect at **US$9.99**. Product ID: `galleryglow.lifetime.v2`; Apple ID: `6821757736`. Apple reserved the original `galleryglow.lifetime` ID, so the app sells the replacement while honoring verified historical ownership. Localization, availability in all 175 listed regions, regional pricing, review screenshot, and product review notes are saved. The product remains **Prepare for Submission** and must accompany the updated app build. The current online app description says there are no purchases and must be replaced for this build.
+
+## Screenshots for the previous submission
 
 Uploaded framed promotional screenshots are in
 `app-store-assets/promotional-tv-frame/` at 3840×2160.
@@ -16,6 +18,10 @@ Uploaded set:
 5. `05-browse-by-artist.png` — artist browsing
 6. `06-directors-cut.png` — full-screen Hopper
 7. `07-ambient-gradients.png` — ambient gradient
+
+The second design revision uses rounded frames and bold gallery typography. Its native screenshots are in `artifacts/redesign-round2/screenshots/` and are awaiting visual approval; the product’s uploaded review screenshot still shows the first revision.
+
+New native screenshots can be exported with the documented screenshot test in README.md. Use the new home, artist, artwork, and lifetime-pass screens for the next submission; the old uploaded set does not reflect this redesign.
 
 ## App Information
 
@@ -54,7 +60,7 @@ folder `/docs` → Save. (Requires the `docs/` folder to be committed and pushed
 >
 > FEATURES
 >
-> • Painting of the Day — a new masterpiece greets you every day
+> • Painting of the Day — a new masterpiece to enjoy full screen for free each day
 > • Full-screen viewing — every brushstroke, edge to edge
 > • Browse by artist — Klimt, Munch, Michelangelo, Hopper, Botticelli, Monet,
 >   Church, Leutze, and Post
@@ -66,22 +72,43 @@ folder `/docs` → Save. (Requires the `docs/` folder to be committed and pushed
 >
 > ONE PURCHASE, YOURS FOREVER
 >
+> Browse freely and enjoy the Painting of the Day in full screen at no cost.
 > Gallery Glow Lifetime is a single one-time purchase that unlocks every
-> painting, every gradient, and all future gallery additions. No
-> subscriptions. Family Sharing supported.
+> painting on any day, every gradient, and all future gallery additions.
+> No subscriptions.
+
 >
 > All artwork is in the public domain, sourced from museum open-access
 > collections.
 
-## Keywords (100 chars max — currently 91)
+## Keywords (100 chars max)
 
 ```
-art,screensaver,paintings,van gogh,monet,ambient,museum,masterpiece,frame tv,relax,hokusai
+art,paintings,monet,hopper,museum,ambient,screensaver,frame tv,relax,classic,gradient,apple tv
 ```
 
-## App Review notes (version-level)
+## Account readiness
 
-> The app is fully functional without purchase for browsing. The "Gallery Glow
-> Lifetime" non-consumable in-app purchase unlocks full-screen viewing of all
-> paintings, animated gradients, and Top Shelf deep links. The paywall appears
-> when selecting any painting or via the banner at the top of the home screen.
+App Store Connect Business shows the Paid Apps Agreement as **Pending User Info**. Bank details are missing, along with Canadian GST/HST Form 506, U.S. Certificate of Foreign Status of Beneficial Owner, and U.S. Form W-8BEN information. The account holder must complete the applicable details. No banking or tax information was entered.
+
+## In-app purchase setup
+
+- Reference name and English display name: **Gallery Glow Lifetime**
+- Product ID: `galleryglow.lifetime.v2`
+- Apple ID: `6821757736`
+- Type: **Non-Consumable**
+- English description: **Full-screen art, ambient scenes and future additions.**
+- Base price: **US$9.99**, with Apple regional equivalents; the app displays StoreKit’s localized price
+- Family Sharing: **Off**; the app reads Apple’s setting and does not advertise sharing
+- Review screenshot: **Uploaded** `08-lifetime-pass.png` from the new native 4K checkout
+- Product review notes: **Saved** with exact purchase/restore entry points
+
+## App Review notes (version-level draft)
+
+> Browsing the collection and artist pages is free, as is full-screen playback of the current Painting of the Day from any entry point (including Top Shelf). The free work rotates by local calendar date; an open free viewing session can finish uninterrupted. No app account or sign-in is required. On the first screen, select **Explore lifetime** in the upper-right corner to see Gallery Glow Lifetime, or select a painting other than the daily free artwork or any ambient scene. Choose **Unlock lifetime** to open Apple's confirmation. The localized price is provided by the App Store.
+>
+> This is a single non-consumable purchase, not a subscription. It unlocks all paintings on any day, ambient scenes, and future additions. The daily free artwork already supports full-screen playback, including from Top Shelf. **Restore Purchase** is next to **Keep browsing** on the lifetime screen. An approved purchase or restore continues directly to the selected artwork. Back/Menu always returns to browsing. Owners see **Your lifetime pass** on the home screen.
+>
+> Please test the new build and its accompanying non-consumable together in the Apple sandbox. Earlier build 1.0 (5) removed payment; this build restores the purchase entry points and transaction flow.
+
+Before submission, select the new build, attach the new product, confirm the configured product and agreement status, and update the online description, screenshots, and review notes. Test an actual sandbox purchase and restore with the Xcode local StoreKit configuration disabled. These steps have not been completed by the local simulator tests.

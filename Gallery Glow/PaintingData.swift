@@ -7,7 +7,7 @@
 
 import Foundation
 
-class PaintingData {
+nonisolated final class PaintingData: Sendable {
     static let shared = PaintingData()
 
     let artists: [Artist]
@@ -82,9 +82,8 @@ class PaintingData {
 
     /// Returns a deterministic "painting of the day" based on the current date
     /// Only selects from Director's Cut paintings (16:9 ratio optimized)
-    func paintingOfTheDay() -> Painting {
-        let calendar = Calendar.current
-        let dayOfYear = calendar.ordinality(of: .day, in: .year, for: Date()) ?? 1
+    func paintingOfTheDay(on date: Date = Date(), calendar: Calendar = .current) -> Painting {
+        let dayOfYear = calendar.ordinality(of: .day, in: .year, for: date) ?? 1
         let index = (dayOfYear - 1) % directorsCut.count
         return directorsCut[index]
     }

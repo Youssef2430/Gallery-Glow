@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct Artist: Identifiable, Hashable {
+nonisolated struct Artist: Identifiable, Hashable, Sendable {
     /// Deterministic ID derived from artist name (stable across app launches)
     var id: String { name }
     let name: String
@@ -24,7 +24,7 @@ struct Artist: Identifiable, Hashable {
     }
 }
 
-struct Painting: Identifiable, Hashable {
+nonisolated struct Painting: Identifiable, Hashable, Sendable {
     /// Deterministic ID derived from imageName (unique per painting, stable across app launches)
     var id: String { imageName }
     let title: String

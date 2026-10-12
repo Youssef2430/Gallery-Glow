@@ -26,7 +26,7 @@ class TopShelfManager {
             let lastRefreshDay = calendar.startOfDay(for: lastRefreshDate)
             
             // Only refresh if the day has changed
-            if today > lastRefreshDay {
+            if today != lastRefreshDay {
                 refresh()
             }
         } else {

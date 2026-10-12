@@ -17,12 +17,14 @@ import ImageIO
 /// decoded large enough that its short side covers the frame — sizing by the long
 /// side alone produces an undersized bitmap that gets upscaled on screen (blurry
 /// thumbnails). The decoded size is capped at the image's native resolution.
-func downsampleImage(
+nonisolated func downsampleImage(
     named imageName: String,
     to pointSize: CGSize,
     contentMode: ContentMode = .fill,
     scale: CGFloat = 1.0
 ) -> UIImage? {
+    guard pointSize.width.isFinite, pointSize.height.isFinite, scale.isFinite,
+          pointSize.width > 0, pointSize.height > 0, scale > 0 else { return nil }
     let targetPixelSize = CGSize(
         width: pointSize.width * scale,
         height: pointSize.height * scale
@@ -37,7 +39,7 @@ func downsampleImage(
 /// How much the image must be scaled so it covers (`.fill`) or fits (`.fit`) the
 /// target. Never returns more than 1 — decoding above native resolution wastes
 /// memory without adding detail.
-private func downsampleScaleFactor(
+nonisolated func downsampleScaleFactor(
     imagePixelSize: CGSize,
     targetPixelSize: CGSize,
     contentMode: ContentMode
@@ -55,7 +57,7 @@ private func downsampleScaleFactor(
 }
 
 /// Get the file URL for an image bundled as a loose resource (not asset catalog)
-private func imageURL(for imageName: String) -> URL? {
+nonisolated private func imageURL(for imageName: String) -> URL? {
     for ext in ["jpg", "jpeg", "png", "heic"] {
         if let url = Bundle.main.url(forResource: imageName, withExtension: ext) {
             return url
@@ -66,7 +68,7 @@ private func imageURL(for imageName: String) -> URL? {
 
 /// ImageIO downsampling for file-backed images: decodes directly at thumbnail
 /// size without ever materializing the full-resolution bitmap.
-private func downsampleFromFile(url: URL, targetPixelSize: CGSize, contentMode: ContentMode) -> UIImage? {
+nonisolated private func downsampleFromFile(url: URL, targetPixelSize: CGSize, contentMode: ContentMode) -> UIImage? {
     guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil) else {
         return nil
     }
@@ -98,7 +100,7 @@ private func downsampleFromFile(url: URL, targetPixelSize: CGSize, contentMode: 
 }
 
 /// Downsampling for asset catalog images, which have no file URL.
-private func downsampleFromAssetCatalog(named imageName: String, targetPixelSize: CGSize, contentMode: ContentMode) -> UIImage? {
+nonisolated private func downsampleFromAssetCatalog(named imageName: String, targetPixelSize: CGSize, contentMode: ContentMode) -> UIImage? {
     guard let original = UIImage(named: imageName) else {
         return nil
     }
@@ -141,183 +143,239 @@ private func downsampleFromAssetCatalog(named imageName: String, targetPixelSize
     }
 }
 
-// MARK: - Image Cache
+// MARK: - Requests and cache
 
-/// Simple image cache to avoid repeated downsampling.
-/// NSCache is thread-safe — no additional synchronization needed.
-final class ImageCache {
+/// Pixel dimensions are part of identity. Small layout fluctuations share one
+/// decode, and Retina requests can never reuse a lower-resolution cache entry.
+nonisolated struct ImageRequest: Hashable, Sendable {
+    let imageName: String
+    let pixelWidth: Int
+    let pixelHeight: Int
+    let fillsFrame: Bool
+
+    init?(imageName: String, size: CGSize, contentMode: ContentMode, scale: CGFloat) {
+        guard size.width.isFinite, size.height.isFinite, scale.isFinite,
+              size.width > 0, size.height > 0, scale > 0 else { return nil }
+        self.imageName = imageName
+        // Bound malformed requests, while allowing native 4K output.
+        pixelWidth = Int(min(8192, ceil(size.width * scale / 64) * 64))
+        pixelHeight = Int(min(8192, ceil(size.height * scale / 64) * 64))
+        fillsFrame = contentMode == .fill
+    }
+
+    var size: CGSize { CGSize(width: pixelWidth, height: pixelHeight) }
+    var contentMode: ContentMode { fillsFrame ? .fill : .fit }
+    var cacheKey: String { "\(imageName)_\(pixelWidth)x\(pixelHeight)_\(fillsFrame)" }
+}
+
+/// NSCache synchronizes access internally. Previews have their own small budget
+/// so a full-screen image cannot evict every thumbnail needed for navigation.
+nonisolated final class ImageCache: @unchecked Sendable {
     static let shared = ImageCache()
+    private let images = NSCache<NSString, UIImage>()
+    private let previews = NSCache<NSString, UIImage>()
 
-    private let cache = NSCache<NSString, UIImage>()
-
-    private init() {
-        // Configure cache limits
-        cache.countLimit = 100
-        cache.totalCostLimit = 100 * 1024 * 1024 // 100MB
+    init() {
+        images.totalCostLimit = 64 * 1024 * 1024
+        images.countLimit = 80
+        previews.totalCostLimit = 12 * 1024 * 1024
+        previews.countLimit = 30
     }
 
-    func image(forKey key: String) -> UIImage? {
-        cache.object(forKey: key as NSString)
+    func image(for request: ImageRequest) -> UIImage? {
+        images.object(forKey: request.cacheKey as NSString)
     }
 
-    func setImage(_ image: UIImage, forKey key: String) {
-        // Use pixel dimensions (not point dimensions) for accurate memory cost
-        let pixelWidth = image.size.width * image.scale
-        let pixelHeight = image.size.height * image.scale
-        let cost = Int(pixelWidth * pixelHeight * 4) // 4 bytes per pixel (RGBA)
-        cache.setObject(image, forKey: key as NSString, cost: cost)
+    func preview(for imageName: String) -> UIImage? {
+        previews.object(forKey: imageName as NSString)
     }
 
-    func cacheKey(for imageName: String, size: CGSize, contentMode: ContentMode) -> String {
-        "\(imageName)_\(Int(size.width))x\(Int(size.height))_\(contentMode == .fill ? "fill" : "fit")"
+    func insert(_ image: UIImage, for request: ImageRequest) {
+        let cost = image.cgImage.map { $0.bytesPerRow * $0.height }
+            ?? Int(image.size.width * image.size.height * image.scale * image.scale * 4)
+        images.setObject(image, forKey: request.cacheKey as NSString, cost: cost)
+        if cost <= 4 * 1024 * 1024 {
+            previews.setObject(image, forKey: request.imageName as NSString, cost: cost)
+        } else if preview(for: request.imageName) == nil {
+            let ratio = 640 / max(image.size.width, image.size.height)
+            let size = CGSize(width: image.size.width * ratio, height: image.size.height * ratio)
+            if let preview = image.preparingThumbnail(of: size) {
+                let cost = preview.cgImage.map { $0.bytesPerRow * $0.height } ?? 640 * 640 * 4
+                previews.setObject(preview, forKey: request.imageName as NSString, cost: cost)
+            }
+        }
+    }
+
+    func removeAll() {
+        images.removeAllObjects()
+        previews.removeAllObjects()
+    }
+}
+
+/// Coalesces identical requests. A maximum of two decodes can run at once,
+/// independently of how many lazy-grid cells SwiftUI creates. Completed work is
+/// cached even if a view leaves, but cancelled consumers never update their UI.
+actor PaintingImageLoader {
+    static let shared = PaintingImageLoader()
+    nonisolated let cache: ImageCache
+    private let queue: OperationQueue
+    private let decode: @Sendable (ImageRequest) -> UIImage?
+    private var inFlight: [ImageRequest: (id: UUID, task: Task<UIImage?, Never>)] = [:]
+
+    init(cache: ImageCache = .shared,
+         decode: @escaping @Sendable (ImageRequest) -> UIImage? = { request in
+             downsampleImage(named: request.imageName, to: request.size,
+                             contentMode: request.contentMode)
+         }) {
+        self.cache = cache
+        self.decode = decode
+        queue = OperationQueue()
+        queue.name = "com.galleryglow.image-decoding"
+        queue.maxConcurrentOperationCount = 2
+        queue.qualityOfService = .userInitiated
+    }
+
+    func image(for request: ImageRequest) async -> UIImage? {
+        guard !Task.isCancelled else { return nil }
+        if let image = cache.image(for: request) { return image }
+        if let work = inFlight[request] { return await work.task.value }
+
+        let id = UUID()
+        let task = Task { [queue, decode, cache] in
+            let image: UIImage? = await withCheckedContinuation { continuation in
+                let operation = BlockOperation {
+                    let image = autoreleasepool {
+                        let image = decode(request)
+                        if let image { cache.insert(image, for: request) }
+                        return image
+                    }
+                    continuation.resume(returning: image)
+                }
+                // A selected full-screen painting should not sit behind a queue
+                // of offscreen thumbnail work from rapid scrolling.
+                operation.queuePriority = request.pixelWidth >= 1280 ? .veryHigh : .normal
+                queue.addOperation(operation)
+            }
+            return image
+        }
+        inFlight[request] = (id, task)
+        let image = await task.value
+        if inFlight[request]?.id == id { inFlight[request] = nil }
+        return image
     }
 }
 
 // MARK: - PaintingImage View
 
-/// A view that displays a painting image with a placeholder fallback.
-/// Uses downsampling to efficiently load large images at the display size.
 struct PaintingImage: View {
     let imageName: String
     let contentMode: ContentMode
-    /// Optional explicit decode size (in points). Use when the on-screen frame is
-    /// much larger than the detail actually needed — e.g. a heavily blurred
-    /// backdrop can decode at a fraction of full screen size.
     let targetSize: CGSize?
+    let allowsRetry: Bool
+    let loader: PaintingImageLoader
+    let onFailureChange: (Bool) -> Void
 
     @Environment(\.displayScale) private var displayScale
-
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var loadedImage: UIImage?
-    @State private var isLoading = true
-    @State private var loadTask: Task<Void, Never>?
-    @State private var loadedForSize: CGSize = .zero
+    @State private var loadedName: String?
+    @State private var completedRequest: ImageRequest?
+    @State private var failedRequest: ImageRequest?
+    @State private var showProgress = false
+    @State private var attempt = 0
+    @FocusState private var retryHasFocus: Bool
 
-    init(_ imageName: String, contentMode: ContentMode = .fill, targetSize: CGSize? = nil) {
+    private struct LoadID: Equatable {
+        let request: ImageRequest?
+        let attempt: Int
+    }
+
+    init(_ imageName: String, contentMode: ContentMode = .fill,
+         targetSize: CGSize? = nil, allowsRetry: Bool = false,
+         loader: PaintingImageLoader = .shared,
+         onFailureChange: @escaping (Bool) -> Void = { _ in }) {
         self.imageName = imageName
         self.contentMode = contentMode
         self.targetSize = targetSize
+        self.allowsRetry = allowsRetry
+        self.loader = loader
+        self.onFailureChange = onFailureChange
     }
 
     var body: some View {
         GeometryReader { geometry in
+            let request = ImageRequest(imageName: imageName, size: targetSize ?? geometry.size,
+                                       contentMode: contentMode, scale: displayScale)
+            let image = request.flatMap { loader.cache.image(for: $0) }
+                ?? (loadedName == imageName ? loadedImage : nil)
+                ?? loader.cache.preview(for: imageName)
+            let failed = request != nil && failedRequest == request
+            let loading = request != nil && completedRequest != request && !failed
+            let loadID = LoadID(request: request, attempt: attempt)
+
             ZStack {
-                if let uiImage = loadedImage {
-                    Image(uiImage: uiImage)
+                if image == nil { Color(white: 0.12) }
+                if let image {
+                    Image(uiImage: image)
                         .resizable()
+                        .accessibilityLabel("Artwork")
+                        .accessibilityIdentifier("artwork-\(imageName)")
                         .aspectRatio(contentMode: contentMode)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                } else {
-                    // Placeholder while loading or for missing images
-                    placeholderView
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-            }
-            .onAppear {
-                loadImageIfNeeded(for: geometry.size)
-            }
-            .onChange(of: geometry.size) { _, newSize in
-                // Only reload if size changed significantly (>10% in either dimension)
-                guard loadedForSize.width > 0, loadedForSize.height > 0 else {
-                    loadImageIfNeeded(for: newSize)
-                    return
-                }
-                let widthDelta = abs(newSize.width - loadedForSize.width) / loadedForSize.width
-                let heightDelta = abs(newSize.height - loadedForSize.height) / loadedForSize.height
-                if widthDelta > 0.1 || heightDelta > 0.1 {
-                    loadImageIfNeeded(for: newSize)
-                }
-            }
-            .onDisappear {
-                loadTask?.cancel()
-            }
-        }
-    }
-
-    private var placeholderView: some View {
-        ZStack {
-            Color(white: 0.15)
-
-            if isLoading {
-                ProgressView()
-                    .scaleEffect(1.5)
-            } else {
-                VStack(spacing: 12) {
-                    Image(systemName: "photo.artframe")
-                        .font(.system(size: 48))
-                        .foregroundColor(.white.opacity(0.3))
-
-                    Text(displayName)
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.4))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                }
-            }
-        }
-    }
-
-    private func loadImageIfNeeded(for size: CGSize) {
-        let resolvedSize = targetSize ?? size
-        let loadSize = CGSize(
-            width: resolvedSize.width > 0 ? resolvedSize.width : 800,
-            height: resolvedSize.height > 0 ? resolvedSize.height : 600
-        )
-
-        let cacheKey = ImageCache.shared.cacheKey(for: imageName, size: loadSize, contentMode: contentMode)
-
-        // Check cache first
-        if let cachedImage = ImageCache.shared.image(forKey: cacheKey) {
-            self.loadedImage = cachedImage
-            self.loadedForSize = loadSize
-            self.isLoading = false
-            return
-        }
-
-        // Cancel any previous in-flight load
-        loadTask?.cancel()
-
-        // Load asynchronously with structured concurrency
-        isLoading = true
-        let name = imageName
-        let mode = contentMode
-        let scale = displayScale
-        loadTask = Task {
-            let image = await Task.detached(priority: .userInitiated) {
-                downsampleImage(named: name, to: loadSize, contentMode: mode, scale: scale)
-            }.value
-
-            guard !Task.isCancelled else { return }
-
-            await MainActor.run {
-                if let image = image {
-                    ImageCache.shared.setImage(image, forKey: cacheKey)
-                    withAnimation(.easeIn(duration: 0.15)) {
-                        self.loadedImage = image
+                if failed {
+                    VStack(spacing: 12) {
+                        Image(systemName: "photo.artframe")
+                        Text("Artwork unavailable")
+                            .font(.callout)
+                        if allowsRetry {
+                            Button("Try Again") { attempt += 1 }
+                                .focused($retryHasFocus)
+                                .defaultFocus($retryHasFocus, true)
+                        }
                     }
-                    self.loadedForSize = loadSize
+                    .padding(24)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                } else if image == nil && loading && showProgress {
+                    ProgressView("Loading artwork")
                 }
-                self.isLoading = false
+            }
+            .onChange(of: failed) { _, failed in
+                onFailureChange(failed)
+                retryHasFocus = failed && allowsRetry
+            }
+            .task(id: loadID) {
+                guard let request else { return }
+                failedRequest = nil
+                let image = await loader.image(for: request)
+                guard !Task.isCancelled else { return }
+                if let image {
+                    withAnimation(reduceMotion ? nil : .easeIn(duration: 0.15)) {
+                        loadedImage = image
+                        loadedName = request.imageName
+                        completedRequest = request
+                    }
+                } else {
+                    failedRequest = request
+                }
+            }
+            .task(id: loadID) {
+                showProgress = false
+                guard image == nil, let request else { return }
+                // Avoid flashing a spinner for fast, local cache/asset loads.
+                do { try await Task.sleep(for: .milliseconds(150)) } catch { return }
+                if completedRequest != request && failedRequest != request {
+                    showProgress = true
+                }
             }
         }
-    }
-
-    private var displayName: String {
-        // Extract just the filename from path like "Artist/catalog_name_1998.74.5"
-        let filename = imageName.components(separatedBy: "/").last ?? imageName
-        // Remove catalog numbers and clean up
-        let cleaned = filename
-            .replacingOccurrences(of: "_", with: " ")
-            .replacingOccurrences(of: "-", with: " ")
-        // Remove trailing catalog numbers like "1998.74.5"
-        let parts = cleaned.components(separatedBy: " ")
-        let filtered = parts.filter { !$0.contains(".") || $0.count > 12 }
-        return filtered.joined(separator: " ").capitalized
     }
 }
 
 // MARK: - Aspect Ratio Helper
 
 /// Get the aspect ratio of an image without loading the full image
-func getImageAspectRatio(for imageName: String) -> CGFloat? {
+nonisolated func getImageAspectRatio(for imageName: String) -> CGFloat? {
     // Try to get image properties without loading full image
     if let url = imageURL(for: imageName),
        let source = CGImageSourceCreateWithURL(url as CFURL, nil),

@@ -23,8 +23,8 @@ class ContentProvider: TVTopShelfContentProvider {
         // MARK: Section 2 - Recently Used
         var recentTopShelfItems: [TVTopShelfSectionedItem] = []
 
-        for recentItem in RecentlyUsedManager.shared.getRecentItems().prefix(8) {
-            let item = TVTopShelfSectionedItem(identifier: "recent_\(recentItem.identifier)")
+        for recentItem in await RecentlyUsedManager.shared.getRecentItems().prefix(8) {
+            let item = TVTopShelfSectionedItem(identifier: "recent_\(recentItem.type.rawValue)_\(recentItem.identifier)")
             item.title = recentItem.title
             // Pre-rendered images are 16:9; without this the system crops them
             // into squares and upscales, which looks soft

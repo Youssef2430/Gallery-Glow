@@ -102,3 +102,6 @@ DerivedData
 # Carthage/Checkouts
 
 Carthage/Build
+
+# Local verification evidence
+/artifacts/

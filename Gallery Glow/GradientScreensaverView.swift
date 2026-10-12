@@ -60,6 +60,17 @@ struct GradientScreensaverView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var startDate = Date()
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+    private let reduceMotionOverride: Bool?
+    private var reduceMotion: Bool { reduceMotionOverride ?? systemReduceMotion }
+    @State private var isPaused = false
+    @FocusState private var hasRemoteFocus: Bool
+    @State private var pausedAt: Date?
+    @State private var showControls = true
+    @State private var controlsDismissalID = UUID()
+
+    private var shouldAnimate: Bool { scenePhase == .active && !reduceMotion && !isPaused }
 
     // Current and next colors stored as HSBA components so transitions
     // interpolate through hue space instead of muddying through grey.
@@ -71,10 +82,16 @@ struct GradientScreensaverView: View {
     private let transitionDuration: Double = 8.0
     private let colorChangeInterval: Double = 20.0
 
+    init(palette: GradientPalette, reduceMotionOverride: Bool? = nil) {
+        self.palette = palette
+        self.reduceMotionOverride = reduceMotionOverride
+    }
+
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0/30.0)) { timeline in
-            let time = timeline.date.timeIntervalSince(startDate)
-            let base = baseColors(at: timeline.date)
+        TimelineView(.animation(minimumInterval: 1.0/30.0, paused: !shouldAnimate)) { timeline in
+            let date = pausedAt ?? timeline.date
+            let time = date.timeIntervalSince(startDate)
+            let base = baseColors(at: date)
 
             MeshGradient(
                 width: 4,
@@ -91,14 +108,61 @@ struct GradientScreensaverView: View {
         .onAppear {
             startDate = Date()
             resetColors()
-            UIApplication.shared.isIdleTimerDisabled = true
+            if !shouldAnimate { pausedAt = Date() }
         }
-        .task(id: palette) {
+        .onChange(of: shouldAnimate) { _, animating in
+            if animating, let pausedAt {
+                let pauseDuration = Date().timeIntervalSince(pausedAt)
+                startDate = startDate.addingTimeInterval(pauseDuration)
+                if let transitionStartDate {
+                    self.transitionStartDate = transitionStartDate.addingTimeInterval(pauseDuration)
+                }
+                self.pausedAt = nil
+            } else if !animating {
+                pausedAt = Date()
+            }
+        }
+        .task(id: shouldAnimate) {
+            guard shouldAnimate else { return }
             await runColorCycle()
         }
-        .onDisappear {
-            UIApplication.shared.isIdleTimerDisabled = false
+        .overlay(alignment: .bottom) {
+            if showControls || isPaused {
+                Text(reduceMotion ? "Reduce Motion is on · Back to gallery" :
+                     (isPaused ? "Paused · Play/Pause to resume · Back to gallery" : "Play/Pause to pause · Back to gallery"))
+                    .font(.caption)
+                    .padding(16)
+                    .background(.regularMaterial, in: Capsule())
+                    .padding(.bottom, 60)
+            }
         }
+        .task(id: controlsDismissalID) {
+            let dismissalID = controlsDismissalID
+            // Paused feedback stays visible. A timer from an earlier command
+            // must never hide the feedback for a newer resume command.
+            guard !isPaused else { return }
+            do { try await Task.sleep(for: .seconds(5)) } catch { return }
+            guard !Task.isCancelled, dismissalID == controlsDismissalID else { return }
+            showControls = false
+        }
+        .focusable()
+        .focused($hasRemoteFocus)
+        .defaultFocus($hasRemoteFocus, true)
+        .focusEffectDisabled()
+        .onChange(of: scenePhase, initial: true) { _, phase in
+            hasRemoteFocus = phase == .active
+        }
+        .onPlayPauseCommand {
+            guard !reduceMotion else { return }
+            // Feedback must update with the command, even while lifecycle
+            // changes are cancelling or restarting SwiftUI's async tasks.
+            showControls = true
+            isPaused.toggle()
+            controlsDismissalID = UUID()
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("gradient-screensaver")
+        .accessibilityLabel("\(palette.rawValue) gradient")
         .onExitCommand {
             dismiss()
         }
@@ -206,18 +270,20 @@ struct GradientScreensaverView: View {
     }
 
     private func runColorCycle() async {
+        // Resume an interrupted transition before scheduling the next palette.
+        if let transitionStartDate {
+            let remaining = max(0, transitionDuration - Date().timeIntervalSince(transitionStartDate))
+            guard await sleep(seconds: remaining) else { return }
+            finishColorTransition()
+        }
         while !Task.isCancelled {
             guard await sleep(seconds: colorChangeInterval) else { return }
 
-            await MainActor.run {
-                beginColorTransition(at: Date())
-            }
+            beginColorTransition(at: Date())
 
             guard await sleep(seconds: transitionDuration) else { return }
 
-            await MainActor.run {
-                finishColorTransition()
-            }
+            finishColorTransition()
         }
     }
 

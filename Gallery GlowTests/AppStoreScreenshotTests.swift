@@ -2,7 +2,7 @@
 //  AppStoreScreenshotTests.swift
 //  Gallery GlowTests
 //
-//  Renders key screens to 1920x1080 PNGs for the App Store listing.
+//  Renders key screens to native-resolution PNGs for the App Store listing.
 //  Hosted unit tests run inside the app process, so views can be
 //  presented in the real window and snapshotted.
 //  Output: /tmp/gg-shots/*.png
@@ -15,7 +15,7 @@ import UIKit
 
 struct AppStoreScreenshotTests {
 
-    @Test("Render App Store screenshots")
+    @Test("Render App Store screenshots", .enabled(if: ProcessInfo.processInfo.environment["GALLERY_GLOW_SCREENSHOTS"] == "1"))
     @MainActor
     func renderAppStoreScreenshots() async throws {
         let data = PaintingData.shared
@@ -25,6 +25,13 @@ struct AppStoreScreenshotTests {
         }
 
         var screens: [(String, AnyView)] = []
+
+        let purchases = PurchaseManager(store: PurchaseUITestStore(scenario: "success"))
+        await purchases.prepare()
+        screens.append(("01-gallery-home", AnyView(ContentView(session: GallerySession(purchases: purchases)))))
+        if let venus = painting("Botticelli/Birth_of_Venus") {
+            screens.append(("08-lifetime-pass", AnyView(PaywallView(purchases: purchases, painting: venus, onClose: {}))))
+        }
 
         if let p = painting("Michelangelo/Creation_of_Adam") {
             screens.append(("02-creation-of-adam", AnyView(ScreensaverView(painting: p))))
@@ -40,7 +47,7 @@ struct AppStoreScreenshotTests {
         }
         if let klimt = data.artists.first(where: { $0.name.contains("Klimt") }) {
             screens.append(("06-artist-klimt", AnyView(
-                NavigationStack { ArtistView(artist: klimt) }
+                NavigationStack { ArtistView(artist: klimt) { _ in } }
             )))
         }
         screens.append(("07-gradient-aurora", AnyView(GradientScreensaverView(palette: .aurora))))
@@ -48,8 +55,9 @@ struct AppStoreScreenshotTests {
         let scene = try #require(UIApplication.shared.connectedScenes.first as? UIWindowScene)
         let window = try #require(scene.windows.first)
         let originalRoot = window.rootViewController
+        defer { window.rootViewController = originalRoot }
 
-        let outputDir = URL(fileURLWithPath: "/tmp/gg-shots")
+        let outputDir = URL(fileURLWithPath: ProcessInfo.processInfo.environment["GALLERY_GLOW_SCREENSHOT_DIR"] ?? "/tmp/gg-shots")
         try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
 
         for (name, view) in screens {
@@ -66,6 +74,5 @@ struct AppStoreScreenshotTests {
             try png.write(to: outputDir.appendingPathComponent("\(name).png"))
         }
 
-        window.rootViewController = originalRoot
     }
 }
