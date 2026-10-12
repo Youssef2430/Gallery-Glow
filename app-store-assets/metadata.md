@@ -35,15 +35,15 @@ New native screenshots can be exported with the documented screenshot test in RE
 | App Privacy | **Data Not Collected** (matches PrivacyInfo.xcprivacy: no tracking, no collected data) |
 | Copyright | `2026 Youssef Chouay` |
 
-## URLs (after enabling GitHub Pages — see below)
+## URLs
 
 | Field | Value |
 |---|---|
-| Support URL | `https://youssef2430.github.io/Gallery-Glow/` |
+| Marketing URL | `https://youssef2430.github.io/Gallery-Glow/` |
+| Support URL | `https://youssef2430.github.io/Gallery-Glow/support.html` |
 | Privacy Policy URL | `https://youssef2430.github.io/Gallery-Glow/privacy.html` |
 
-Enable Pages: GitHub repo → Settings → Pages → Deploy from branch → `main`,
-folder `/docs` → Save. (Requires the `docs/` folder to be committed and pushed.)
+GitHub Pages deploys from `main`, folder `/docs`.
 
 ## Promotional Text (170 chars max)
 
