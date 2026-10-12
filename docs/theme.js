@@ -7,7 +7,7 @@
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const validPreference = value => ['light', 'dark'].includes(value) ? value : 'system';
   let preference = 'system';
-  let picker;
+  let toggle;
   let activeTransition;
   let revision = 0;
 
@@ -23,11 +23,7 @@
     document.querySelector('meta[name="theme-color"]')?.setAttribute(
       'content', theme === 'dark' ? '#131514' : '#f6f5ef'
     );
-    if (!picker) return;
-    const description = preference === 'system' ? `System (${theme})` : theme;
-    picker.querySelector('summary').setAttribute('aria-label', `Change theme: ${description}`);
-    picker.querySelector('summary').title = `Theme: ${description}`;
-    picker.querySelectorAll('input').forEach(input => { input.checked = input.value === preference; });
+    toggle?.setAttribute('aria-label', `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`);
   }
 
   // Runs in the head so a saved preference is applied before the first paint.
@@ -35,7 +31,7 @@
 
   function rippleOrigin() {
     const painting = document.querySelector('.mount img')?.getBoundingClientRect();
-    const control = picker.querySelector('summary').getBoundingClientRect();
+    const control = toggle.getBoundingClientRect();
     const visiblePainting = painting && painting.bottom > 0 && painting.top < innerHeight;
     const target = visiblePainting ? painting : control;
     const x = Math.max(0, Math.min(innerWidth, target.left + target.width / 2));
@@ -103,10 +99,10 @@
     const slot = document.querySelector('.theme-slot');
     if (!slot) return;
 
-    picker = document.createElement('details');
-    picker.className = 'theme-picker';
-    picker.innerHTML = `
-      <summary>
+    toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'theme-toggle';
+    toggle.innerHTML = `
         <svg class="theme-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <defs>
             <mask id="theme-moon-mask">
@@ -118,40 +114,16 @@
           <g class="sun-rays" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
             <path d="M12 2v2 M12 20v2 M2 12h2 M20 12h2 M4.93 4.93l1.42 1.42 M17.65 17.65l1.42 1.42 M4.93 19.07l1.42-1.42 M17.65 6.35l1.42-1.42" />
           </g>
-        </svg>
-      </summary>
-      <fieldset class="theme-menu">
-        <legend>Appearance</legend>
-        <label><input type="radio" name="theme" value="light"><span>Light</span></label>
-        <label><input type="radio" name="theme" value="dark"><span>Dark</span></label>
-        <label><input type="radio" name="theme" value="system"><span>System</span></label>
-      </fieldset>`;
-    slot.replaceWith(picker);
+        </svg>`;
+    slot.replaceWith(toggle);
     updateTheme();
 
-    picker.addEventListener('change', event => {
-      if (!event.target.matches('input[name="theme"]')) return;
-      preference = validPreference(event.target.value);
+    toggle.addEventListener('click', () => {
+      preference = resolvedTheme() === 'dark' ? 'light' : 'dark';
       try { localStorage.setItem(storageKey, preference); } catch {}
-      picker.open = false;
-      picker.querySelector('summary').focus({ preventScroll: true });
       changeTheme();
     });
 
-    document.addEventListener('pointerdown', event => {
-      if (!picker.contains(event.target)) picker.open = false;
-    });
-    document.addEventListener('keydown', event => {
-      if (event.key === 'Escape' && picker.open) {
-        picker.open = false;
-        picker.querySelector('summary').focus({ preventScroll: true });
-      }
-    });
-    picker.addEventListener('focusout', () => {
-      requestAnimationFrame(() => {
-        if (!picker.contains(document.activeElement)) picker.open = false;
-      });
-    });
     systemTheme.addEventListener('change', () => {
       if (preference === 'system') changeTheme();
     });

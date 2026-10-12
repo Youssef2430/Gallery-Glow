@@ -1,21 +1,23 @@
-.theme-picker { position: relative; z-index: 5; }
-.theme-picker summary {
+.theme-toggle {
   position: relative;
+  z-index: 5;
+  appearance: none;
   display: grid;
   place-items: center;
   width: 44px;
   height: 44px;
+  margin: 0;
+  padding: 0;
+  font: inherit;
   color: var(--ink);
   background: transparent;
   border: 0;
   cursor: pointer;
-  list-style: none;
   -webkit-tap-highlight-color: transparent;
   view-transition-name: theme-control;
 }
-.theme-picker summary::-webkit-details-marker { display: none; }
-.theme-picker summary:focus-visible { outline: none; }
-.theme-picker summary:focus-visible::after {
+.theme-toggle:focus-visible { outline: none; }
+.theme-toggle:focus-visible::after {
   content: "";
   position: absolute;
   bottom: 3px;
@@ -30,26 +32,6 @@
 [data-theme="dark"] .sun-disc { r: 9px; }
 [data-theme="dark"] .moon-cutout { transform: translate(-9px, 9px); }
 [data-theme="dark"] .sun-rays { opacity: 0; transform: rotate(70deg) scale(.5); }
-.theme-menu {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
-  width: 176px;
-  min-inline-size: 0;
-  margin: 0;
-  padding: 12px 8px 8px;
-  border: 1px solid var(--rule);
-  border-radius: 18px;
-  background: var(--surface);
-  box-shadow: 0 12px 32px var(--shadow);
-}
-.theme-menu legend { float: left; width: 100%; padding: 0 10px 6px; color: var(--secondary); font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
-.theme-menu label { display: flex; flex-direction: row-reverse; align-items: center; justify-content: space-between; gap: 20px; min-height: 42px; padding: 0 10px; border-radius: 9px; font-size: 13px; cursor: pointer; }
-.theme-menu label:hover { background: var(--paper); }
-.theme-menu label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: -2px; }
-.theme-menu input { appearance: none; width: 14px; height: 14px; margin: 0; border: 1px solid var(--rule); border-radius: 50%; cursor: pointer; }
-.theme-menu input:checked { border-color: var(--ink); background: var(--ink); box-shadow: inset 0 0 0 3px var(--surface); }
-.theme-menu input:focus-visible { outline: none; }
 
 /* Keep the morphing control and water rings above the circular page reveal. */
 ::view-transition-group(root),
