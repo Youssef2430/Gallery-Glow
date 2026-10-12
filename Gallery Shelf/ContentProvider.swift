@@ -1,127 +1,82 @@
-//
-//  ContentProvider.swift
-//  Gallery Shelf
-//
-//  Created by Youssef Chouay on 2025-12-28.
-//
-
 import Foundation
 import TVServices
 
-class ContentProvider: TVTopShelfContentProvider {
-
+final class ContentProvider: TVTopShelfContentProvider {
     override func loadTopShelfContent() async -> TVTopShelfContent? {
+        let data = PaintingData.shared
+        let now = Date()
+        let today = data.paintingOfTheDay(on: now)
         var sections: [TVTopShelfItemCollection<TVTopShelfSectionedItem>] = []
 
-        // MARK: Section 1 - Painting of the Day
-        let potd = PaintingData.shared.paintingOfTheDay()
+        let featured = paintingItem(for: today, idPrefix: "potd", featured: true)
+        if let featured {
+            let section = TVTopShelfItemCollection(items: [featured])
+            section.title = "Painting of the Day"
+            sections.append(section)
+        }
 
-        let featuredSection = TVTopShelfItemCollection(items: [paintingItem(for: potd, idPrefix: "potd")])
-        featuredSection.title = "Painting of the Day"
-        sections.append(featuredSection)
-
-        // MARK: Section 2 - Recently Used
-        var recentTopShelfItems: [TVTopShelfSectionedItem] = []
-
-        for recentItem in await RecentlyUsedManager.shared.getRecentItems().prefix(8) {
-            let item = TVTopShelfSectionedItem(identifier: "recent_\(recentItem.type.rawValue)_\(recentItem.identifier)")
-            item.title = recentItem.title
-            // Pre-rendered images are 16:9; without this the system crops them
-            // into squares and upscales, which looks soft
-            item.imageShape = .hdtv
-
-            switch recentItem.type {
+        // Resolve persisted entries against the current catalog, just as the
+        // in-app recents row does. Removed works must not leave empty cards.
+        let recents = await RecentlyUsedManager.shared.getRecentItems()
+        var seen = Set<String>()
+        let recentItems = recents.compactMap { recent -> TVTopShelfSectionedItem? in
+            let key = "\(recent.type.rawValue)_\(recent.identifier)"
+            guard seen.insert(key).inserted else { return nil }
+            switch recent.type {
             case .painting:
-                if let imageURL = imageURL(for: recentItem.identifier) {
-                    item.setImageURL(imageURL, for: .screenScale1x)
-                    item.setImageURL(imageURL, for: .screenScale2x)
-                }
-                if let url = deepLinkURL(kind: "painting", identifier: recentItem.identifier) {
-                    item.displayAction = TVTopShelfAction(url: url)
-                    item.playAction = item.displayAction
-                }
-
+                guard let painting = data.allPaintings.first(where: { $0.imageName == recent.identifier }) else { return nil }
+                return paintingItem(for: painting, idPrefix: "recent_painting")
             case .gradient:
-                if let imageURL = gradientImageURL(for: recentItem.identifier) {
-                    item.setImageURL(imageURL, for: .screenScale1x)
-                    item.setImageURL(imageURL, for: .screenScale2x)
-                }
-                if let url = deepLinkURL(kind: "gradient", identifier: recentItem.identifier) {
-                    item.displayAction = TVTopShelfAction(url: url)
-                    item.playAction = item.displayAction
-                }
+                guard let palette = GradientPalette(rawValue: recent.identifier) else { return nil }
+                let resource = "gradient_" + palette.rawValue.lowercased().replacingOccurrences(of: " ", with: "_")
+                return item(identifier: "recent_\(key)", title: palette.rawValue,
+                            resource: resource, kind: "gradient", route: palette.rawValue)
             }
-
-            recentTopShelfItems.append(item)
+        }
+        if !recentItems.isEmpty {
+            let section = TVTopShelfItemCollection(items: Array(recentItems.prefix(8)))
+            section.title = "Recently Viewed"
+            sections.append(section)
         }
 
-        if !recentTopShelfItems.isEmpty {
-            let recentSection = TVTopShelfItemCollection(items: recentTopShelfItems)
-            recentSection.title = "Recently Used"
-            sections.append(recentSection)
+        let selectedWorks = data.directorsCut.filter { $0.id != today.id }
+            .compactMap { paintingItem(for: $0, idPrefix: "dc") }
+        if !selectedWorks.isEmpty {
+            let section = TVTopShelfItemCollection(items: selectedWorks)
+            section.title = "Director’s Cut"
+            sections.append(section)
         }
-
-        // MARK: Section 3 - Director's Cut
-        let directorsCutItems = PaintingData.shared.directorsCut
-            .filter { $0.id != potd.id } // skip the painting of the day (already featured)
-            .map { paintingItem(for: $0, idPrefix: "dc") }
-
-        if !directorsCutItems.isEmpty {
-            let directorsCutSection = TVTopShelfItemCollection(items: directorsCutItems)
-            directorsCutSection.title = "Director's Cut"
-            sections.append(directorsCutSection)
-        }
-
-        return TVTopShelfSectionedContent(sections: sections)
+        return sections.isEmpty ? nil : TVTopShelfSectionedContent(sections: sections)
     }
 
-    // MARK: - Item Builders
+    private func paintingItem(for painting: Painting, idPrefix: String, featured: Bool = false) -> TVTopShelfSectionedItem? {
+        let resource = painting.imageName.replacingOccurrences(of: "/", with: "_")
+        return item(identifier: "\(idPrefix)_\(painting.imageName)", title: painting.title,
+                    resource: (featured ? "featured_" : "") + resource,
+                    kind: "painting", route: painting.imageName)
+    }
 
-    private func paintingItem(for painting: Painting, idPrefix: String) -> TVTopShelfSectionedItem {
-        let item = TVTopShelfSectionedItem(identifier: "\(idPrefix)_\(painting.imageName)")
-        item.title = painting.title
+    private func item(identifier: String, title: String, resource: String,
+                      kind: String, route: String) -> TVTopShelfSectionedItem? {
+        guard let imageURL = imageURL(for: resource),
+              let encoded = route.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
+              let url = URL(string: "galleryglow://\(kind)/\(encoded)") else { return nil }
+        let item = TVTopShelfSectionedItem(identifier: identifier)
+        // Native titles stay readable in either appearance and accessible to
+        // VoiceOver. Keep painting names out of the image to avoid a duplicate title.
+        item.title = title
         item.imageShape = .hdtv
-
-        if let imageURL = imageURL(for: painting.imageName) {
-            item.setImageURL(imageURL, for: .screenScale1x)
-            item.setImageURL(imageURL, for: .screenScale2x)
-        }
-
-        if let url = deepLinkURL(kind: "painting", identifier: painting.imageName) {
-            item.displayAction = TVTopShelfAction(url: url)
-            item.playAction = item.displayAction
-        }
-
+        item.setImageURL(imageURL, for: .screenScale1x)
+        item.setImageURL(imageURL, for: .screenScale2x)
+        item.displayAction = TVTopShelfAction(url: url)
+        item.playAction = item.displayAction
         return item
     }
 
-    private func deepLinkURL(kind: String, identifier: String) -> URL? {
-        let encoded = identifier.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? identifier
-        return URL(string: "galleryglow://\(kind)/\(encoded)")
-    }
-
-    // MARK: - Image URL Helpers
-
-    private func imageURL(for imageName: String) -> URL? {
-        // Top Shelf extensions have tight memory budgets.
-        // Use pre-rendered small JPEGs from TopShelfImages folder.
-        let resourceName = imageName.replacingOccurrences(of: "/", with: "_")
-
-        return Bundle.main.url(forResource: resourceName, withExtension: "jpg", subdirectory: "TopShelfImages")
-            ?? Bundle.main.url(forResource: resourceName, withExtension: "jpeg", subdirectory: "TopShelfImages")
-            ?? Bundle.main.url(forResource: resourceName, withExtension: "png", subdirectory: "TopShelfImages")
-            ?? Bundle.main.url(forResource: resourceName, withExtension: "jpg")
-            ?? Bundle.main.url(forResource: resourceName, withExtension: "jpeg")
-            ?? Bundle.main.url(forResource: resourceName, withExtension: "png")
-    }
-
-    private func gradientImageURL(for paletteName: String) -> URL? {
-        // Look for pre-rendered gradient preview images
-        let resourceName = "gradient_\(paletteName.lowercased().replacingOccurrences(of: " ", with: "_"))"
-
-        return Bundle.main.url(forResource: resourceName, withExtension: "jpg", subdirectory: "TopShelfImages")
-            ?? Bundle.main.url(forResource: resourceName, withExtension: "png", subdirectory: "TopShelfImages")
-            ?? Bundle.main.url(forResource: resourceName, withExtension: "jpg")
-            ?? Bundle.main.url(forResource: resourceName, withExtension: "png")
+    private func imageURL(for resource: String) -> URL? {
+        // Pre-rendered 888 × 500 JPEGs keep the extension lightweight. Xcode
+        // can preserve the resource folder or flatten it when bundling.
+        Bundle.main.url(forResource: resource, withExtension: "jpg", subdirectory: "TopShelfImages")
+            ?? Bundle.main.url(forResource: resource, withExtension: "jpg")
     }
 }

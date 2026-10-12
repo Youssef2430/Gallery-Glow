@@ -32,17 +32,22 @@ struct CompleteCatalogTests {
     func topShelfResourcesAndRoutes() throws {
         let plugins = try #require(Bundle.main.builtInPlugInsURL)
         let shelf = try #require(Bundle(url: plugins.appendingPathComponent("Gallery Shelf.appex")))
-        func exists(_ resource: String) -> Bool {
-            shelf.url(forResource: resource, withExtension: "jpg", subdirectory: "TopShelfImages") != nil ||
-                shelf.url(forResource: resource, withExtension: "jpg") != nil
+        func verifyCard(_ resource: String) throws {
+            let url = try #require(shelf.url(forResource: resource, withExtension: "jpg", subdirectory: "TopShelfImages") ??
+                                   shelf.url(forResource: resource, withExtension: "jpg"), "Missing shelf card: \(resource)")
+            let bitmap = try #require(UIImage(contentsOfFile: url.path)?.cgImage, "Invalid shelf card: \(resource)")
+            #expect(bitmap.width == 888)
+            #expect(bitmap.height == 500)
         }
         for painting in PaintingData.shared.allPaintings {
-            #expect(exists(painting.imageName.replacingOccurrences(of: "/", with: "_")))
+            let resource = painting.imageName.replacingOccurrences(of: "/", with: "_")
+            try verifyCard(resource)
+            try verifyCard("featured_" + resource)
             let encoded = painting.imageName.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)!
             #expect(GallerySession.selection(for: URL(string: "galleryglow://painting/\(encoded)")!) == .painting(painting))
         }
         for palette in GradientPalette.allCases {
-            #expect(exists("gradient_" + palette.rawValue.lowercased().replacingOccurrences(of: " ", with: "_")))
+            try verifyCard("gradient_" + palette.rawValue.lowercased().replacingOccurrences(of: " ", with: "_"))
             let encoded = palette.rawValue.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)!
             #expect(GallerySession.selection(for: URL(string: "galleryglow://gradient/\(encoded)")!) == .gradient(palette))
             #expect(palette.colors.count == 4)
@@ -93,13 +98,22 @@ struct CompleteCatalogTests {
     func topShelfRefreshDates() throws {
         let defaults = UserDefaults.standard
         let key = "TopShelfLastRefreshDate"
+        let versionKey = "TopShelfDesignVersion"
         let previous = defaults.object(forKey: key)
+        let previousVersion = defaults.object(forKey: versionKey)
         defer {
             if let previous { defaults.set(previous, forKey: key) }
             else { defaults.removeObject(forKey: key) }
+            if let previousVersion { defaults.set(previousVersion, forKey: versionKey) }
+            else { defaults.removeObject(forKey: versionKey) }
         }
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
+        defaults.set(today, forKey: key)
+        defaults.removeObject(forKey: versionKey)
+        TopShelfManager.shared.refreshIfNeeded()
+        #expect(defaults.integer(forKey: versionKey) == 6)
+        #expect(abs((try #require(defaults.object(forKey: key) as? Date)).timeIntervalSinceNow) < 5)
         defaults.set(today, forKey: key)
         TopShelfManager.shared.refreshIfNeeded()
         #expect(defaults.object(forKey: key) as? Date == today)

@@ -66,6 +66,7 @@ fastlane/screenshots
 fastlane/test_output
 
 *.sh
+!/generate_topshelf_images.sh
 
 .DS_Store
 

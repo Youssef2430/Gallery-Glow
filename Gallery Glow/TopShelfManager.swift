@@ -13,11 +13,19 @@ class TopShelfManager {
     static let shared = TopShelfManager()
     
     private let lastRefreshDateKey = "TopShelfLastRefreshDate"
+    private let designVersionKey = "TopShelfDesignVersion"
+    private let designVersion = 6
     
     private init() {}
     
     /// Refresh the top shelf if the day has changed since the last refresh
     func refreshIfNeeded() {
+        // Refresh on the first launch after a shelf redesign, even if the
+        // previous version already refreshed earlier today.
+        guard UserDefaults.standard.integer(forKey: designVersionKey) == designVersion else {
+            refresh()
+            return
+        }
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         
@@ -39,6 +47,7 @@ class TopShelfManager {
     func refresh() {
         // Store the current date as last refresh
         UserDefaults.standard.set(Date(), forKey: lastRefreshDateKey)
+        UserDefaults.standard.set(designVersion, forKey: designVersionKey)
         
         // Notify tvOS that the top shelf content has changed
         TVTopShelfContentProvider.topShelfContentDidChange()

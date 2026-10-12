@@ -68,6 +68,7 @@
 		EF8949D92F01D85B00E4308C /* Exceptions for "Gallery Glow" folder in "Gallery Shelf" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				GradientPalette.swift,
 				Models.swift,
 				PaintingData.swift,
 				RecentlyUsedManager.swift,
