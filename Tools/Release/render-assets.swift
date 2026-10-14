@@ -80,5 +80,9 @@ let social = canvas(width: 1200, height: 630) {
     image(venus, in: CGRect(x: 560, y: 180, width: 560, height: 333))
 }
 try social.representation(using: .jpeg, properties: [.compressionFactor: 0.92])!.write(to: web.appendingPathComponent("gallery-glow-social.jpg"))
-try Data(contentsOf: source.appendingPathComponent("08-lifetime-pass.png")).write(to: root.appendingPathComponent("app-store-assets/iap-review-screenshot.png"))
+let paywall = NSImage(contentsOf: source.appendingPathComponent("08-lifetime-pass.png"))!
+let review = canvas(width: 1920, height: 1080) {
+    image(paywall, in: CGRect(x: 0, y: 0, width: 1920, height: 1080))
+}
+try review.representation(using: .png, properties: [:])!.write(to: root.appendingPathComponent("app-store-assets/iap-review-screenshot.png"))
 print("Rendered eight 4K App Store cards, four web screenshots, and a social preview.")
