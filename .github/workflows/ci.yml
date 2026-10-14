@@ -46,6 +46,11 @@ jobs:
           persist-credentials: false
       - name: Select installed tvOS simulator
         run: python3 Tools/Release/select_simulator.py >> "$GITHUB_ENV"
+      - name: Start the simulator UI for remote focus and accessibility
+        run: |
+          xcrun simctl bootstatus "$TVOS_SIMULATOR_ID" -b
+          open -a Simulator --args -CurrentDeviceUDID "$TVOS_SIMULATOR_ID"
+          osascript -e 'tell application "Simulator" to activate'
       - name: Unit, StoreKit, purchase UI, and appearance tests
         run: |
           set -o pipefail
