@@ -33,25 +33,30 @@ his own PRs need no approval. All PRs still need passing checks.
 
 ## Release assets
 
-The current build is **1.0 (6)**. [Listing copy and URLs](app-store-assets/metadata.md)
-and [eight 4K promotional screenshots](app-store-assets/release-1.0-6/) match the
+The current build is **1.0 (7)**. [Listing copy and URLs](app-store-assets/metadata.md)
+and [eight 4K promotional screenshots](app-store-assets/release-1.0-7/) match the
 current app. Older images outside that directory are historical references.
 
 Capture native screens on the 4K simulator:
 
 ```sh
 TEST_RUNNER_GALLERY_GLOW_SCREENSHOTS=1 \
-TEST_RUNNER_GALLERY_GLOW_SCREENSHOT_DIR=/tmp/gallery-glow-release-6 \
+TEST_RUNNER_GALLERY_GLOW_SCREENSHOT_DIR=/tmp/gallery-glow-release-7 \
 xcodebuild test -project 'Gallery Glow.xcodeproj' -scheme 'Gallery Glow' \
   -destination 'platform=tvOS Simulator,name=Apple TV 4K (3rd generation)' \
   -parallel-testing-enabled NO \
   -only-testing:'Gallery GlowTests/AppStoreScreenshotTests' CODE_SIGNING_ALLOWED=NO
-swift Tools/Release/render-assets.swift /tmp/gallery-glow-release-6
+swift Tools/Release/render-assets.swift /tmp/gallery-glow-release-7
 ```
 
 Choose dark appearance on the simulator to reproduce this set. Native screenshots
 show the actual app. Promotional layouts and web previews are generated with
 AppKit, using the bundled artwork and screenshot pixels.
+
+Regenerate the layered app icon, App Store icon, in-app mark, Top Shelf banners,
+and website icons with `swift Tools/Release/render-brand.swift`. The editable
+vector mark also lives in `docs/favicon.svg`. The background layer is opaque;
+the landscape and frame remain separate transparent layers for tvOS parallax.
 
 Archive and export with [Tools/Release/ExportOptions.plist](Tools/Release/ExportOptions.plist)
 for App Store Connect. Uploading to TestFlight does not submit the app for review.

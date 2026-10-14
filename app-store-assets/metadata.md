@@ -1,4 +1,4 @@
-# Gallery Glow — build 1.0 (6)
+# Gallery Glow — build 1.0 (7)
 
 Release package prepared October 14, 2026. This document is the source for the
 updated listing; publishing the website or uploading a TestFlight build does not
@@ -20,7 +20,7 @@ GitHub Pages publishes `main`, folder `/docs`.
 
 ## Current screenshot set
 
-Use the eight 3840 × 2160 PNGs in `app-store-assets/release-1.0-6/`, in filename
+Use the eight 3840 × 2160 PNGs in `app-store-assets/release-1.0-7/`, in filename
 order. They wrap fresh screenshots of the current app in a coordinated paper,
 ink, and gold presentation. Images elsewhere in `app-store-assets/` are historical
 and must not be mixed into this set.

@@ -64,13 +64,28 @@ for path in [ROOT / 'README.md', ROOT / 'app-store-assets/metadata.md', *pages.k
     if re.search(r'youssef2430\.github\.io|github\.com/Youssef2430', path.read_text(), re.I):
         errors.append(f'Outdated website/repository URL: {path.relative_to(ROOT)}')
 
-screens = list((ROOT / 'app-store-assets/release-1.0-6').glob('*.png'))
+screens = list((ROOT / 'app-store-assets/release-1.0-7').glob('*.png'))
 if len(screens) != 8:
     errors.append('Expected eight current App Store screenshots')
 for path in screens:
     data = path.read_bytes()
     if data[:8] != b'\x89PNG\r\n\x1a\n' or struct.unpack('>II', data[16:24]) != (3840, 2160):
         errors.append(f'{path.name}: expected a 3840 x 2160 PNG')
+
+# tvOS requires opaque backgrounds and banners, but genuine alpha in depth layers.
+brand = ROOT / 'Gallery Glow/Assets.xcassets/App Icon & Top Shelf Image.brandassets'
+for path in brand.rglob('*.png'):
+    match = re.search(r'(\d+)x(\d+)(?:@(\d)x)?\.png$', path.name)
+    if not match:
+        errors.append(f'Unrecognized brand asset size: {path.name}')
+        continue
+    width, height, scale = int(match[1]), int(match[2]), int(match[3] or 1)
+    data = path.read_bytes()
+    if struct.unpack('>II', data[16:24]) != (width * scale, height * scale):
+        errors.append(f'Incorrect brand asset dimensions: {path.name}')
+    expected_color_type = 6 if path.name.startswith(('front-', 'middle-')) else 2
+    if data[25] != expected_color_type:
+        errors.append(f'Incorrect transparency for {path.name}')
 
 if errors:
     raise SystemExit('\n'.join(errors))

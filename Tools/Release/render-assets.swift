@@ -1,10 +1,10 @@
 import AppKit
 
 // Deterministic marketing layouts around screenshots of the actual app.
-// Run: swift Tools/Release/render-assets.swift /tmp/gallery-glow-release-6
+// Run: swift Tools/Release/render-assets.swift /tmp/gallery-glow-release-7
 let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-let source = URL(fileURLWithPath: CommandLine.arguments.dropFirst().first ?? "/tmp/gallery-glow-release-6")
-let output = root.appendingPathComponent("app-store-assets/release-1.0-6")
+let source = URL(fileURLWithPath: CommandLine.arguments.dropFirst().first ?? "/tmp/gallery-glow-release-7")
+let output = root.appendingPathComponent("app-store-assets/release-1.0-7")
 let web = root.appendingPathComponent("docs/assets")
 let previews = root.appendingPathComponent("artifacts/release-2026-10/previews")
 try FileManager.default.createDirectory(at: previews, withIntermediateDirectories: true)
