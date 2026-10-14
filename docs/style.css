@@ -135,3 +135,45 @@ figcaption span:first-child { text-transform: uppercase; letter-spacing: .09em; 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; }
 }
+
+/* The release story uses the same paper, ink and warm accent as the tvOS app. */
+html { scroll-behavior: smooth; }
+.inside, .collection-edit { padding-block: 76px; border-top: 1px solid var(--rule); }
+.section-heading { display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px 72px; align-items: end; margin-bottom: 34px; }
+.section-heading > .eyebrow { grid-column: 1 / -1; }
+.section-heading h2, .ambient-copy h2, .lifetime-story h2 { font-size: clamp(36px, 4.3vw, 66px); line-height: 1.06; font-weight: 500; letter-spacing: -.05em; }
+.section-heading > p:last-child, .ambient-copy > p:not(.eyebrow), .lifetime-story > p:not(.eyebrow) { max-width: 520px; color: var(--secondary); font-size: 17px; line-height: 1.7; }
+.app-preview { margin-top: 44px; }
+.app-preview > img { width: 100%; height: auto; display: block; border: 8px solid #242620; border-radius: 22px; box-shadow: 0 22px 34px -18px var(--shadow); }
+.art-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; }
+.art-grid img { display: block; width: 100%; height: auto; aspect-ratio: 10/7; object-fit: cover; border-radius: 5px; }
+.art-grid figure:nth-child(2) { margin-top: 46px; }
+.art-grid figure:nth-child(3) { margin-top: 92px; }
+.art-grid figcaption { flex-direction: column; gap: 3px; }
+.ambient-story { display: grid; grid-template-columns: .8fr 1.2fr; gap: 64px; align-items: center; padding-block: 76px; border-top: 1px solid var(--rule); }
+.ambient-copy h2 { margin-top: 20px; }
+.ambient-copy > p:not(.eyebrow) { margin-top: 24px; }
+.ambient-copy > .small-note { font-size: 12px !important; }
+.ambient-preview img { display: block; width: 100%; height: auto; border: 8px solid #242620; border-radius: 22px; }
+.ambient-preview figcaption { justify-content: flex-end; }
+.lifetime-story { padding: 88px 24px; margin-bottom: 70px; text-align: center; background: var(--surface); border-radius: 28px; }
+.lifetime-story h2 { margin: 24px auto; }
+.lifetime-story > p:not(.eyebrow) { margin-inline: auto; max-width: 780px; }
+.lifetime-notes { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px 28px; margin-top: 30px; font-size: 12px; color: var(--secondary); }
+.lifetime-notes span::before { content: '✓'; margin-right: 8px; color: var(--ink); }
+.text-link { display: inline-flex; align-items: center; gap: 22px; min-height: 44px; margin-top: 25px; font-size: 14px; }
+@media (max-width: 760px) {
+  .inside, .collection-edit, .ambient-story { padding-block: 44px; }
+  .section-heading, .ambient-story { grid-template-columns: 1fr; gap: 22px; }
+  .section-heading > p:last-child, .ambient-copy > p:not(.eyebrow), .lifetime-story > p:not(.eyebrow) { font-size: 15px; }
+  .app-preview { margin-top: 26px; }
+  .app-preview > img, .ambient-preview img { border-width: 4px; border-radius: 12px; }
+  .app-preview figcaption { flex-direction: column; gap: 4px; }
+  .art-grid { grid-template-columns: 1fr; gap: 30px; }
+  .art-grid figure:nth-child(n) { margin-top: 0; }
+  .art-grid figcaption { flex-direction: row; }
+  .lifetime-story { padding: 48px 22px; margin-bottom: 40px; border-radius: 20px; }
+  .lifetime-story h2 { font-size: clamp(30px, 8vw, 48px); }
+  .lifetime-notes { flex-direction: column; gap: 14px; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
