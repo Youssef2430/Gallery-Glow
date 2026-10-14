@@ -55,8 +55,9 @@ jobs:
             -only-testing:'Gallery GlowTests' \
             -only-testing:'Gallery GlowUITests/PurchaseUITests' \
             -only-testing:'Gallery GlowUITests/AppearanceUITests' \
+            -test-timeouts-enabled YES -maximum-test-execution-time-allowance 180 \
             -resultBundlePath artifacts/tests.xcresult \
-            CODE_SIGNING_ALLOWED=NO | tee tests.log
+            CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- | tee tests.log
       - name: Build Release for Apple TV hardware
         run: |
           set -o pipefail
