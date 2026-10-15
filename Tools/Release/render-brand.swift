@@ -75,6 +75,24 @@ func icon(_ w: Int, _ h: Int, layer: String? = nil) -> NSBitmapImageRep {
         }
     }
 }
+// Browser favicons need their own alpha mask; tvOS backgrounds stay opaque.
+func favicon(_ size: Int) -> NSBitmapImageRep {
+    canvas(size, size, alpha: true) {
+        let side = CGFloat(size)
+        rect(CGRect(x: 0, y: 0, width: side, height: side), paper, radius: side * 0.26)
+        mark(CGRect(x: side * 0.11, y: side * 0.227, width: side * 0.78, height: side * 0.546))
+    }
+}
+let ico = root.appendingPathComponent("docs/favicon.ico")
+let destination = CGImageDestinationCreateWithURL(ico as CFURL, UTType.ico.identifier as CFString, 3, nil)!
+for size in [16,32,48] { CGImageDestinationAddImage(destination, favicon(size).cgImage!, nil) }
+precondition(CGImageDestinationFinalize(destination))
+try save(favicon(32), root.appendingPathComponent("docs/favicon-32.png"))
+if CommandLine.arguments.contains("--web-only") {
+    print("Rendered rounded browser favicons with transparent corners.")
+    exit(0)
+}
+
 for (stack, w, h, suffix) in [("App Icon",400,240,"@1x"), ("App Icon",800,480,"@2x"), ("App Icon - App Store",1280,768,"")] {
     let base = stack == "App Icon" ? "400x240" : "1280x768"
     for layer in ["Back", "Middle", "Front"] {
@@ -85,10 +103,6 @@ for (stack, w, h, suffix) in [("App Icon",400,240,"@1x"), ("App Icon",800,480,"@
 try save(icon(1280,768), previews.appendingPathComponent("app-icon.png"))
 try save(icon(1024,1024), assets.appendingPathComponent("GalleryBrandIcon.imageset/gallery-brand-icon.png"))
 try save(icon(180,180), root.appendingPathComponent("docs/apple-touch-icon.png"))
-let ico = root.appendingPathComponent("docs/favicon.ico")
-let destination = CGImageDestinationCreateWithURL(ico as CFURL, UTType.ico.identifier as CFString, 3, nil)!
-for size in [16,32,48] { CGImageDestinationAddImage(destination, icon(size,size).cgImage!, nil) }
-precondition(CGImageDestinationFinalize(destination))
 
 func text(_ value: String, _ r: CGRect, size: CGFloat, serif: Bool = false, color: NSColor = ink) {
     let font = NSFont(name: serif ? "Baskerville" : "AvenirNext-Medium", size: size) ?? .systemFont(ofSize: size)
