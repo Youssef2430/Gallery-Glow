@@ -40,6 +40,11 @@ jobs:
     name: tvOS build and tests
     runs-on: macos-26
     timeout-minutes: 45
+    env:
+      # 26.4/26.5 StoreKitTest has an Apple-confirmed CLI configuration bug.
+      # Keep real StoreKit coverage on the installed 26.2 runtime.
+      DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
+      TVOS_RUNTIME: tvOS-26-2
     steps:
       - uses: actions/checkout@v4
         with:

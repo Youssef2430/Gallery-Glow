@@ -25,7 +25,7 @@ node --test .github/scripts/owner-approval.test.cjs
 node --test Tools/Anatomy/model.test.mjs
 xcodebuild test -project 'Gallery Glow.xcodeproj' -scheme 'Gallery Glow' \
   -destination 'platform=tvOS Simulator,name=Apple TV 4K (3rd generation)' \
-  -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO
+  -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=-
 ```
 
 Use a current Xcode with the tvOS simulator installed. CI also compiles Release
@@ -33,6 +33,13 @@ for Apple TV hardware so debug-only fixtures cannot hide release compilation
 errors. Purchase and appearance tests exercise the real remote-driven UI;
 StoreKit integration tests cover purchases, Ask to Buy, historical ownership,
 relaunch, and refunds. Live App Store sandbox verification remains a release step.
+
+CI pins Xcode and tvOS 26.2. The runner's 26.5 StoreKit daemon rejected test
+configuration with `SKInternalErrorDomain Code=3` and `notEntitled`, matching the
+[Apple-tracked simulator issue](https://developer.apple.com/forums/thread/826971).
+The full StoreKit suite stays enabled. Revalidate it before updating the runtime
+pin; local release validation also runs on tvOS 27. CI opens Simulator explicitly
+so remote focus and accessibility have an active display.
 
 No CI suite can guarantee that changes never break behavior. Include screenshots
 for visual work and reproduce the affected flow on Apple TV before release.
