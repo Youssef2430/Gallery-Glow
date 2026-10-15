@@ -1,0 +1,11 @@
+name: Review signal
+on:
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+permissions: {}
+jobs:
+  signal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - run: echo 'Review changed; the trusted default-branch policy will query GitHub.'

@@ -1,0 +1,86 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  repository:
+    name: Repository checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate GitHub Actions workflows
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12 -color
+      - name: Approval policy regression tests
+        run: node --test .github/scripts/owner-approval.test.cjs
+      - name: Interactive diagram regression tests
+        run: node --test Tools/Anatomy/model.test.mjs
+      - name: Validate website links and app assets
+        run: python3 Tools/Release/validate.py
+      - name: Check JavaScript syntax
+        run: |
+          node --check docs/theme.js
+          node --check Tools/Anatomy/live.js
+      - name: Check whitespace
+        run: git diff --check HEAD^ HEAD
+  tvos:
+    name: tvOS build and tests
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      # 26.4/26.5 StoreKitTest has an Apple-confirmed CLI configuration bug.
+      # Keep real StoreKit coverage on the installed 26.2 runtime.
+      DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
+      TVOS_RUNTIME: tvOS-26-2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Select installed tvOS simulator
+        run: python3 Tools/Release/select_simulator.py >> "$GITHUB_ENV"
+      - name: Start the simulator UI for remote focus and accessibility
+        run: |
+          xcrun simctl bootstatus "$TVOS_SIMULATOR_ID" -b
+          open -a Simulator --args -CurrentDeviceUDID "$TVOS_SIMULATOR_ID"
+          osascript -e 'tell application "Simulator" to activate'
+      - name: Unit, StoreKit, purchase UI, and appearance tests
+        run: |
+          set -o pipefail
+          xcodebuild test -project 'Gallery Glow.xcodeproj' -scheme 'Gallery Glow' \
+            -destination "platform=tvOS Simulator,id=$TVOS_SIMULATOR_ID" \
+            -parallel-testing-enabled NO \
+            -only-testing:'Gallery GlowTests' \
+            -only-testing:'Gallery GlowUITests/PurchaseUITests' \
+            -only-testing:'Gallery GlowUITests/AppearanceUITests' \
+            -test-timeouts-enabled YES -maximum-test-execution-time-allowance 180 \
+            -resultBundlePath artifacts/tests.xcresult \
+            CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- | tee tests.log
+      - name: Build Release for Apple TV hardware
+        run: |
+          set -o pipefail
+          xcodebuild build -project 'Gallery Glow.xcodeproj' -scheme 'Gallery Glow' \
+            -configuration Release -destination 'generic/platform=tvOS' \
+            CODE_SIGNING_ALLOWED=NO | tee release.log
+      - name: Upload diagnostic results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tvos-test-results
+          path: |
+            artifacts/tests.xcresult
+            tests.log
+            release.log
+          retention-days: 14

@@ -1,114 +1,138 @@
-# Gallery Glow — App Store Connect metadata draft
+# Gallery Glow — build 1.0 (7)
 
-Draft for the redesigned lifetime-purchase build. Not submitted or uploaded.
+Release package prepared October 14, 2026. This document is the source for the
+updated listing; publishing the website or uploading a TestFlight build does not
+submit the app for App Review.
 
-On October 11, 2026, **Gallery Glow Lifetime** was created in App Store Connect at **US$9.99**. Product ID: `galleryglow.lifetime.v2`; Apple ID: `6821757736`. Apple reserved the original `galleryglow.lifetime` ID, so the app sells the replacement while honoring verified historical ownership. Localization, availability in all 175 listed regions, regional pricing, review screenshot, and product review notes are saved. The product remains **Prepare for Submission** and must accompany the updated app build. The current online app description says there are no purchases and must be replaced for this build.
+## URLs and contact
 
-## Screenshots for the previous submission
+| App Store Connect field | Value |
+|---|---|
+| Marketing URL | `https://yssf-c.github.io/Gallery-Glow/` |
+| Support URL | `https://yssf-c.github.io/Gallery-Glow/support.html` |
+| Privacy Policy URL | `https://yssf-c.github.io/Gallery-Glow/privacy.html` |
+| Public contact page | `https://yssf-c.github.io/Gallery-Glow/support.html#contact` |
+| Public support email | `youssefcurry3@gmail.com` |
 
-Uploaded framed promotional screenshots are in
-`app-store-assets/promotional-tv-frame/` at 3840×2160.
+Keep the App Review contact's actual name, phone, and email in their dedicated
+fields; a website is not a replacement for those private review-contact fields.
+GitHub Pages publishes `main`, folder `/docs`.
 
-Uploaded set:
+## Current screenshot set
 
-1. `01-living-gallery.png` — home screen in Apple TV frame
-2. `02-masterpieces-edge-to-edge.png` — full-screen Michelangelo
-3. `03-iconic-works.png` — full-screen Munch
-4. `04-classic-art-framed.png` — full-screen Botticelli
-5. `05-browse-by-artist.png` — artist browsing
-6. `06-directors-cut.png` — full-screen Hopper
-7. `07-ambient-gradients.png` — ambient gradient
+Use the eight 3840 × 2160 PNGs in `app-store-assets/release-1.0-7/`, in filename
+order. They wrap fresh screenshots of the current app in a coordinated paper,
+ink, and gold presentation. Images elsewhere in `app-store-assets/` are historical
+and must not be mixed into this set.
 
-The second design revision uses rounded frames and bold gallery typography. Its native screenshots are in `artifacts/redesign-round2/screenshots/` and are awaiting visual approval; the product’s uploaded review screenshot still shows the first revision.
+1. `01-living-gallery.png` — actual home and daily free artwork
+2. `02-great-art.png` — Botticelli in full screen
+3. `03-the-artists.png` — artist browsing
+4. `04-nighthawks.png` — Hopper in full screen
+5. `05-ambient-scenes.png` — Aurora ambient scene
+6. `06-masterpieces.png` — Michelangelo in full screen
+7. `07-quiet-moments.png` — Munch in full screen
+8. `08-lifetime.png` — lifetime purchase and restore screen
 
-New native screenshots can be exported with the documented screenshot test in README.md. Use the new home, artist, artwork, and lifetime-pass screens for the next submission; the old uploaded set does not reflect this redesign.
+Use the native `08-lifetime-pass.png` capture as the IAP review screenshot.
+[README.md](../README.md) documents capture and regeneration.
 
 ## App Information
 
-| Field | Value |
-|---|---|
-| Subtitle (30 chars max) | `Classic art on your TV` |
-| Category | Entertainment (secondary: Lifestyle) |
-| Content rights | Does not contain third-party content (all paintings are public domain) |
-| Age rating questionnaire | Answer **None/No** to everything → rating 4+ |
-| Price | Free |
-| App Privacy | **Data Not Collected** (matches PrivacyInfo.xcprivacy: no tracking, no collected data) |
-| Copyright | `2026 Youssef Chouay` |
+- Name: **Gallery Glow**
+- Subtitle: **Classic art on your TV**
+- Primary category: **Entertainment**; secondary: **Lifestyle**
+- App price: **Free**, with an optional non-consumable purchase
+- App privacy: **Data Not Collected**
+- Copyright: **2026 Youssef Chouay**
+- Platform: **Apple TV, tvOS 18 or later**
 
-## URLs
+## Promotional text
 
-| Field | Value |
-|---|---|
-| Marketing URL | `https://youssef2430.github.io/Gallery-Glow/` |
-| Support URL | `https://youssef2430.github.io/Gallery-Glow/support.html` |
-| Privacy Policy URL | `https://youssef2430.github.io/Gallery-Glow/privacy.html` |
-
-GitHub Pages deploys from `main`, folder `/docs`.
-
-## Promotional Text (170 chars max)
-
-> Turn your Apple TV into a living art gallery. Wide-screen masterpieces from
-> Hopper, Monet, Botticelli and more — in stunning full screen, all day long.
+Turn your Apple TV into a quiet gallery. A different painting is free every day. Unlock every artwork and five ambient scenes with one lifetime purchase.
 
 ## Description
 
-> Gallery Glow turns your Apple TV into a living art gallery.
->
-> Fill your screen with timeless masterpieces — Hopper's Nighthawks,
-> Monet's Stacks of Wheat, Church's Heart of the Andes, Michelangelo's Creation
-> of Adam, and more — beautifully presented edge to edge on your TV.
->
-> FEATURES
->
-> • Painting of the Day — a new masterpiece to enjoy full screen for free each day
-> • Full-screen viewing — every brushstroke, edge to edge
-> • Browse by artist — Klimt, Munch, Michelangelo, Hopper, Botticelli, Monet,
->   Church, Leutze, and Post
-> • Director's Cut — a hand-picked selection of the collection's finest
-> • Ambient gradients — five soothing animated color scenes for when you
->   want atmosphere without a frame
-> • Top Shelf integration — your gallery starts right on the Apple TV home
->   screen
->
-> ONE PURCHASE, YOURS FOREVER
->
-> Browse freely and enjoy the Painting of the Day in full screen at no cost.
-> Gallery Glow Lifetime is a single one-time purchase that unlocks every
-> painting on any day, every gradient, and all future gallery additions.
-> No subscriptions.
+A space for art. A moment for you.
 
->
-> All artwork is in the public domain, sourced from museum open-access
-> collections.
+Gallery Glow turns your Apple TV into a private gallery of classic paintings and
+gently animated color. Give your biggest screen something beautiful to show.
 
-## Keywords (100 chars max)
+START WITH TODAY
+Browse the collection freely. Enjoy the Painting of the Day in full screen at no
+cost, with a different work selected each day.
 
-```
+EXPLORE THE COLLECTION
+Discover works by Botticelli, Monet, Hopper, Klimt, Munch, Michelangelo, Church,
+Leutze, and Post. Browse by artist, revisit your favorites in Recently Viewed,
+and open artwork directly from Apple TV's Top Shelf.
+
+CHANGE THE ATMOSPHERE
+Choose from five animated ambient scenes: Ocean Blue, Sunrise Gold, Aurora,
+Pink Orange, and Magenta Purple. Pause and resume using your Apple TV remote.
+
+ONE PURCHASE. YOURS TO KEEP.
+Gallery Glow Lifetime unlocks every painting on any day, every ambient scene,
+and future additions to the collection. It is a single purchase, with no
+subscription. Restore your access with the same Apple Account.
+
+MADE FOR A QUIETER SCREEN
+Light and dark appearance. No ads, analytics, or app account. Artwork is bundled
+with the app, ready to view on your Apple TV.
+
+Explore Gallery Glow: https://yssf-c.github.io/Gallery-Glow/
+Help and contact: https://yssf-c.github.io/Gallery-Glow/support.html
+
+## Keywords
+
 art,paintings,monet,hopper,museum,ambient,screensaver,frame tv,relax,classic,gradient,apple tv
-```
 
-## Account readiness
+## What's new
 
-App Store Connect Business shows the Paid Apps Agreement as **Pending User Info**. Bank details are missing, along with Canadian GST/HST Form 506, U.S. Certificate of Foreign Status of Beneficial Owner, and U.S. Form W-8BEN information. The account holder must complete the applicable details. No banking or tax information was entered.
+A refreshed gallery with light and dark appearance, a free daily painting,
+redesigned Top Shelf previews, and a one-time lifetime unlock with purchase
+restoration. Improved artwork loading, remote navigation, and ambient scenes.
 
-## In-app purchase setup
+## In-app purchase
 
-- Reference name and English display name: **Gallery Glow Lifetime**
+- Reference/display name: **Gallery Glow Lifetime**
 - Product ID: `galleryglow.lifetime.v2`
 - Apple ID: `6821757736`
 - Type: **Non-Consumable**
-- English description: **Full-screen art, ambient scenes and future additions.**
-- Base price: **US$9.99**, with Apple regional equivalents; the app displays StoreKit’s localized price
-- Family Sharing: **Off**; the app reads Apple’s setting and does not advertise sharing
-- Review screenshot: **Uploaded** `08-lifetime-pass.png` from the new native 4K checkout
-- Product review notes: **Saved** with exact purchase/restore entry points
+- Description: **Full-screen art, ambient scenes and future additions.**
+- Configured base price: **US$9.99**; the app displays Apple's localized price
+- Family Sharing: **Off**; only advertise it if enabled for the product
+- Historical product: `galleryglow.lifetime`, still honored for verified owners
 
-## App Review notes (version-level draft)
+The supplied October 13 account screenshot shows the Paid Apps Agreement,
+banking, tax forms, and compliance sections as **Active**. The previous
+“Pending User Info” note is obsolete. Account readiness alone does not verify an
+actual sandbox purchase or establish product approval.
 
-> Browsing the collection and artist pages is free, as is full-screen playback of the current Painting of the Day from any entry point (including Top Shelf). The free work rotates by local calendar date; an open free viewing session can finish uninterrupted. No app account or sign-in is required. On the first screen, select **Explore lifetime** in the upper-right corner to see Gallery Glow Lifetime, or select a painting other than the daily free artwork or any ambient scene. Choose **Unlock lifetime** to open Apple's confirmation. The localized price is provided by the App Store.
->
-> This is a single non-consumable purchase, not a subscription. It unlocks all paintings on any day, ambient scenes, and future additions. The daily free artwork already supports full-screen playback, including from Top Shelf. **Restore Purchase** is next to **Keep browsing** on the lifetime screen. An approved purchase or restore continues directly to the selected artwork. Back/Menu always returns to browsing. Owners see **Your lifetime pass** on the home screen.
->
-> Please test the new build and its accompanying non-consumable together in the Apple sandbox. Earlier build 1.0 (5) removed payment; this build restores the purchase entry points and transaction flow.
+## App Review notes
 
-Before submission, select the new build, attach the new product, confirm the configured product and agreement status, and update the online description, screenshots, and review notes. Test an actual sandbox purchase and restore with the Xcode local StoreKit configuration disabled. These steps have not been completed by the local simulator tests.
+Browsing the collection and artist pages is free. Full-screen playback of the
+current Painting of the Day is free from every entry point, including Top Shelf.
+The free work rotates by local calendar date. A viewing session already admitted
+for free can finish uninterrupted. No app account or sign-in is required.
+
+On the home screen, select **Explore lifetime** in the upper-right corner, or
+select another painting or any ambient scene. Select **Unlock lifetime** to open
+Apple's purchase confirmation. The price is supplied by the App Store.
+
+This is a non-consumable, not a subscription. It unlocks all paintings on any day,
+ambient scenes, and future collection additions. **Restore Purchase** appears
+beside **Keep browsing**. If the paywall was opened for an artwork, a successful
+purchase or restore continues to that artwork. Back/Menu returns to browsing.
+Owners see **Your lifetime pass** on the home screen.
+
+Test the new build and its accompanying product together in Apple's sandbox.
+The previous 1.0 (5) submission removed payment; this build restores the purchase
+entry points and transaction flow.
+
+## Before App Review submission
+
+Select the new processed build, attach the non-consumable, save the URLs and
+copy above, replace the old screenshots, and verify purchase, cancellation,
+relaunch, and restoration through TestFlight on Apple TV. Local StoreKit tests
+exercise the implementation but do not validate the App Store Connect product.

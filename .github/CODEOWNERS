@@ -1,0 +1,3 @@
+# Request Youssef on every change. The required Owner approval status implements
+# the author exception; native required reviews would block the owner's own PRs.
+* @yssf-c
