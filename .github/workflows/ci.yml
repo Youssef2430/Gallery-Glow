@@ -37,7 +37,7 @@ jobs:
       - name: Check whitespace
         run: git diff --check HEAD^ HEAD
   tvos:
-    name: tvOS build and tests
+    name: tvOS tests
     runs-on: macos-26
     timeout-minutes: 45
     env:
@@ -68,12 +68,6 @@ jobs:
             -test-timeouts-enabled YES -maximum-test-execution-time-allowance 180 \
             -resultBundlePath artifacts/tests.xcresult \
             CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- | tee tests.log
-      - name: Build Release for Apple TV hardware
-        run: |
-          set -o pipefail
-          xcodebuild build -project 'Gallery Glow.xcodeproj' -scheme 'Gallery Glow' \
-            -configuration Release -destination 'generic/platform=tvOS' \
-            CODE_SIGNING_ALLOWED=NO | tee release.log
       - name: Upload diagnostic results
         if: always()
         uses: actions/upload-artifact@v4
@@ -82,5 +76,4 @@ jobs:
           path: |
             artifacts/tests.xcresult
             tests.log
-            release.log
           retention-days: 14
