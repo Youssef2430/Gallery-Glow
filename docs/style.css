@@ -154,7 +154,7 @@ html { scroll-behavior: smooth; }
 .ambient-copy h2 { margin-top: 20px; }
 .ambient-copy > p:not(.eyebrow) { margin-top: 24px; }
 .ambient-copy > .small-note { font-size: 12px !important; }
-.ambient-preview img { display: block; width: 100%; height: auto; border: 8px solid #242620; border-radius: 22px; }
+.ocean-gradient { aspect-ratio: 16 / 9; border: 8px solid #242620; border-radius: 22px; background: radial-gradient(ellipse at 5% 5%, #00ccff 0%, transparent 60%), radial-gradient(ellipse at 95% 95%, #00e6cc 0%, transparent 58%), linear-gradient(135deg, #0066e6 15%, #3399ff 60%, #0066e6); }
 .ambient-preview figcaption { justify-content: flex-end; }
 .lifetime-story { padding: 88px 24px; margin-bottom: 70px; text-align: center; background: var(--surface); border-radius: 28px; }
 .lifetime-story h2 { margin: 24px auto; }
@@ -167,7 +167,7 @@ html { scroll-behavior: smooth; }
   .section-heading, .ambient-story { grid-template-columns: 1fr; gap: 22px; }
   .section-heading > p:last-child, .ambient-copy > p:not(.eyebrow), .lifetime-story > p:not(.eyebrow) { font-size: 15px; }
   .app-preview { margin-top: 26px; }
-  .app-preview > img, .ambient-preview img { border-width: 4px; border-radius: 12px; }
+  .app-preview > img, .ocean-gradient { border-width: 4px; border-radius: 12px; }
   .app-preview figcaption { flex-direction: column; gap: 4px; }
   .art-grid { grid-template-columns: 1fr; gap: 30px; }
   .art-grid figure:nth-child(n) { margin-top: 0; }
