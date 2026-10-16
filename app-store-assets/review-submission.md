@@ -5,6 +5,21 @@ The October 16, 2026 rejection (submission
 submitted for review and a new binary uploaded. A successful TestFlight upload
 alone does not resolve Guideline 2.1(b).
 
+## Verified submission
+
+Submitted October 16, 2026 at 7:14 PM America/Toronto. App Store Connect confirmed
+**2 Items Submitted** in [submission b718760f-1e62-47bb-ab23-b2f3dd1a9963](https://appstoreconnect.apple.com/apps/6779811163/distribution/reviewsubmissions/details/b718760f-1e62-47bb-ab23-b2f3dd1a9963):
+
+- **tvOS App 1.0 (8): Waiting for Review**.
+- **Gallery Glow Lifetime: Waiting for Review**.
+
+The existing product screenshot was present and visually verified. Product and
+app review notes now identify build 8, the product ID, purchase/restore entry
+points, and the Apple TV review platform. The old rejected app-only submission
+was cancelled so the app could join the IAP in this new submission. No reply was
+sent to App Review; the draft below is available if needed. These statuses record
+the submission-time result, not subsequent approval.
+
 ## Product and review attachment
 
 - App: Gallery Glow, Apple ID `6779811163`, **tvOS** version **1.0**, build **8**.
@@ -68,5 +83,5 @@ Send only after confirming the submission contains both items:
 - [Submit an In-App Purchase](https://developer.apple.com/help/app-store-connect/manage-submissions-to-app-review/submit-an-in-app-purchase/)
 - [In-App Purchase information](https://developer.apple.com/help/app-store-connect/reference/in-app-purchases-and-subscriptions/in-app-purchase-information/)
 
-This checklist and reply draft are preparation materials, not proof of a
-completed App Store Connect submission.
+The checklist and reply draft are reusable preparation materials. The verified
+submission section above records the actual App Store Connect result.
