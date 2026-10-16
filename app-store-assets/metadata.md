@@ -1,6 +1,6 @@
-# Gallery Glow — build 1.0 (7)
+# Gallery Glow — build 1.0 (8)
 
-Release package prepared October 14, 2026. This document is the source for the
+Release package updated October 16, 2026. This document is the source for the
 updated listing; publishing the website or uploading a TestFlight build does not
 submit the app for App Review.
 
@@ -34,8 +34,10 @@ and must not be mixed into this set.
 7. `07-quiet-moments.png` — Munch in full screen
 8. `08-lifetime.png` — lifetime purchase and restore screen
 
-Use the native `08-lifetime-pass.png` capture as the IAP review screenshot.
-[README.md](../README.md) documents capture and regeneration.
+Use [iap-review-screenshot.png](iap-review-screenshot.png), the native 1920 × 1080
+purchase-screen capture, in the product's **App Review Information → Screenshot**
+field. The listing screenshots do not replace this required IAP attachment.
+The purchase UI is unchanged in build 8, so this capture remains representative.
 
 ## App Information
 
@@ -111,6 +113,9 @@ actual sandbox purchase or establish product approval.
 
 ## App Review notes
 
+Gallery Glow is an Apple TV app for tvOS 18 or later. Please review it on Apple TV;
+this binary does not support iPhone or iPad.
+
 Browsing the collection and artist pages is free. Full-screen playback of the
 current Painting of the Day is free from every entry point, including Top Shelf.
 The free work rotates by local calendar date. A viewing session already admitted
@@ -127,12 +132,15 @@ purchase or restore continues to that artwork. Back/Menu returns to browsing.
 Owners see **Your lifetime pass** on the home screen.
 
 Test the new build and its accompanying product together in Apple's sandbox.
-The previous 1.0 (5) submission removed payment; this build restores the purchase
-entry points and transaction flow.
+The submitted product is **Gallery Glow Lifetime**, `galleryglow.lifetime.v2`
+(Apple ID `6821757736`). The historical `galleryglow.lifetime` identifier is used
+only to recognize existing verified ownership; it is not offered for purchase.
 
 ## Before App Review submission
 
-Select the new processed build, attach the non-consumable, save the URLs and
-copy above, replace the old screenshots, and verify purchase, cancellation,
-relaunch, and restoration through TestFlight on Apple TV. Local StoreKit tests
-exercise the implementation but do not validate the App Store Connect product.
+Follow [review-submission.md](review-submission.md). Select processed build 8,
+complete the product's metadata and review screenshot, and add the product and
+tvOS version 1.0 to the **same** App Review submission before submitting it.
+Verify purchase, cancellation, relaunch, and restoration through TestFlight on
+Apple TV. Local StoreKit tests exercise the implementation but do not validate
+the App Store Connect product or submit it for review.
