@@ -60,6 +60,21 @@ product_id = re.search(r'lifetimeProductID = "([^"]+)"', manager).group(1)
 storekit = json.loads((ROOT / 'Gallery GlowTests/GalleryGlow.storekit').read_text())
 if not any(p['productID'] == product_id and p['type'] == 'NonConsumable' for p in storekit['products']):
     errors.append('StoreKit test configuration must include the live non-consumable product ID')
+metadata = (ROOT / 'app-store-assets/metadata.md').read_text()
+if f'Product ID: `{product_id}`' not in metadata:
+    errors.append('Release metadata must identify the product offered by the app')
+metadata_build = re.search(r'^# Gallery Glow — build [\d.]+ \((\d+)\)', metadata)
+if not metadata_build or metadata_build.group(1) not in versions:
+    errors.append('Release metadata build number must match the Xcode project')
+review_screenshot = ROOT / 'app-store-assets/iap-review-screenshot.png'
+if not review_screenshot.is_file():
+    errors.append('Missing IAP review screenshot')
+else:
+    data = review_screenshot.read_bytes()
+    if len(data) < 26 or data[:8] != b'\x89PNG\r\n\x1a\n' or struct.unpack('>II', data[16:24]) != (1920, 1080):
+        errors.append('IAP review screenshot must be a native 1920 x 1080 PNG')
+if '[iap-review-screenshot.png](iap-review-screenshot.png)' not in metadata:
+    errors.append('Release metadata must link the IAP review screenshot')
 for path in [ROOT / 'README.md', ROOT / 'app-store-assets/metadata.md', *pages.keys()]:
     if re.search(r'youssef2430\.github\.io|github\.com/Youssef2430', path.read_text(), re.I):
         errors.append(f'Outdated website/repository URL: {path.relative_to(ROOT)}')
@@ -89,4 +104,4 @@ for path in brand.rglob('*.png'):
 
 if errors:
     raise SystemExit('\n'.join(errors))
-print(f'Validated {len(pages)} pages, local links, asset references, build versions, product ID, and {len(screens)} screenshots.')
+print(f'Validated {len(pages)} pages, local links, asset references, build versions, product ID, IAP review attachment, and {len(screens)} listing screenshots. App Store Connect submission must be verified separately.')
